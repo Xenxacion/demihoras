@@ -552,11 +552,89 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
   content-visibility:auto;
   contain-intrinsic-size:1px 520px;
 }
-.lbox{flex:0 1 420px;width:auto;max-width:calc(100vw - 64px);margin:16px;padding:34px 28px 30px;}
+.lbox{flex:0 0 auto;width:420px !important;max-width:calc(100vw - 64px) !important;margin:0;padding:34px 28px 30px;}
 .bnone{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
 .bref{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
 .badd{transition:border-color .15s,background .15s,color .15s,transform .15s;}
 .tab{transition:color .15s,border-color .18s,transform .15s;}
+
+/* GPU cold mode: nada decorativo queda animando o componiendo en idle. */
+#loading-screen,
+#login-screen{
+  left:0 !important;
+  right:auto !important;
+  width:100vw !important;
+  max-width:100vw !important;
+}
+body::after,
+.auth-bg,
+.auth-orb,
+.auth-grid,
+.wrap::before,
+.wrap::after,
+.tabs::before,
+.dcard::before,
+.decard::before,
+.rcard::before,
+.atable::before,
+.alert::before{
+  display:none !important;
+}
+*,
+*::before,
+*::after{
+  filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  will-change:auto !important;
+}
+.ld-inner,
+.ld-tagline,
+.ld-msg,
+.lbox,
+.lmark,
+.lbrand,
+.lfield-a,
+.lfield-b,
+.lbtn,
+.topbar,
+.tabs,
+.tab-content,
+.dcard,
+.decard,
+.rcard,
+.anim-row,
+.stitle,
+.rtot,
+.alert,
+.badge-pending{
+  animation:none !important;
+}
+.ld-bar-fill{
+  animation:none !important;
+  transform:none !important;
+  width:100%;
+  opacity:.28;
+}
+.dy{animation:none !important;}
+.bcard:hover,
+.bnone:hover,
+.fbtn:hover,
+.fsel:hover,
+.bref:hover,
+.bsync:hover,
+.decard:hover,
+.rcard:hover,
+.dcard:hover{
+  box-shadow:0 6px 18px rgba(0,0,0,.22);
+}
+@media(max-width:600px){
+  .lbox{
+    width:calc(100vw - 96px) !important;
+    max-width:326px !important;
+    padding:34px 28px 30px;
+  }
+}
 
 /* Accesibilidad: reduce motion */
 @media (prefers-reduced-motion: reduce){
@@ -682,6 +760,12 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 
     <div id="tab-md" class="tab-content" style="display:none;">
       <div class="trow">
+        <div class="tbox adm" id="admin-user-box" style="display:none;min-width:260px;">
+          <label>Usuario</label>
+          <select id="admin-user-select" onchange="selectAdminUser(this.value)">
+            <option value="">Cargando usuarios...</option>
+          </select>
+        </div>
         <div class="tbox"><label>Tarifa Oficina ($/hr)</label><input type="number" id="tof" value="7000" min="0" step="100" oninput="calcD()"/></div>
         <div class="tbox"><label>Tarifa Evento ($/hr)</label><input type="number" id="tev" value="7000" min="0" step="100" oninput="calcD()"/></div>
         <div class="tbox">
@@ -861,9 +945,117 @@ function resolveRol(email,dbRol){
   return 'empleado';
 }
 
-let cu=null,isAdm=false;
+let cu=null,isAdm=false,viewedEmail='',adminUsers=[];
 let MD={},BONOS=[],dolar=null,dolarT=null,selBonos={},curTab='ra',bonosSaveTimer=null;
 let diasDirty=false,diasEditUntil=0;
+
+function dataEmail(email){
+  return String(email||'').trim().toLowerCase();
+}
+function currentDataEmail(){
+  return dataEmail(isAdm&&viewedEmail?viewedEmail:cu?.email);
+}
+function bonosBackupKey(email=currentDataEmail()){
+  return `bradem_sel_bonos_${email||'anon'}`;
+}
+function stateFromDefault(m){
+  const d=defMes(m);
+  return {
+    hrsOficina:Number(d.hrsOficina ?? d.hrs_oficina)||0,
+    hrsEvento:Number(d.hrsEvento ?? d.hrs_evento)||0,
+    gastos:Number(d.gastos)||0,
+    adelantos:Number(d.adelantos)||0,
+    dias:Array.isArray(d.dias)?d.dias:[],
+    bonosSel:[]
+  };
+}
+function stateFromRow(r){
+  const dias=Array.isArray(r?.dias)?r.dias:(typeof r?.dias==='string'&&r.dias?JSON.parse(r.dias):[]);
+  return {
+    hrsOficina:Number(r?.hrs_oficina)||0,
+    hrsEvento:Number(r?.hrs_evento)||0,
+    gastos:Number(r?.gastos)||0,
+    adelantos:Number(r?.adelantos)||0,
+    dias,
+    bonosSel:parseBonosSelField(r?.bonos_sel)
+  };
+}
+async function fetchMesForEmail(email,m){
+  const owner=dataEmail(email);
+  const {data,error}=await sb.from('bw_meses').select('*').eq('email',owner).eq('mes',m).limit(1);
+  if(error) return {state:null,error};
+  return {state:data?.[0]?stateFromRow(data[0]):stateFromDefault(m),error:null};
+}
+async function saveMesForEmail(email,m,state){
+  const owner=dataEmail(email);
+  const payload={
+    email:owner,mes:m,
+    hrs_oficina:Number(state.hrsOficina)||0,
+    hrs_evento:Number(state.hrsEvento)||0,
+    gastos:Number(state.gastos)||0,
+    adelantos:Number(state.adelantos)||0,
+    dias:state.dias||[],
+    bonos_sel:state.bonosSel||[]
+  };
+  const {data:exists,error:findError}=await sb.from('bw_meses').select('mes').eq('email',owner).eq('mes',m).limit(1);
+  if(findError) return false;
+  const q=exists?.length
+    ? sb.from('bw_meses').update(payload).eq('email',owner).eq('mes',m)
+    : sb.from('bw_meses').insert(payload);
+  const {error}=await q;
+  return !error;
+}
+async function loadAdminUsers(){
+  if(!isAdm) return;
+  const found=new Map();
+  const add=(email,rol='empleado')=>{
+    const e=dataEmail(email);
+    if(!e) return;
+    const prev=found.get(e);
+    const finalRol=prev?.rol==='admin'?'admin':(rol||prev?.rol||'empleado');
+    found.set(e,{email:e,rol:finalRol});
+  };
+  const {data:roles}=await sb.from('bw_roles').select('email,rol').order('email');
+  (roles||[]).forEach(r=>add(r.email,r.rol));
+  const {data:sols}=await sb.from('bw_solicitudes').select('empleado_email');
+  (sols||[]).forEach(s=>add(s.empleado_email,'empleado'));
+  const {data:meses}=await sb.from('bw_meses').select('email');
+  (meses||[]).forEach(m=>add(m.email,'empleado'));
+  adminUsers=[...found.values()].sort((a,b)=>{
+    if(a.rol==='admin'&&b.rol!=='admin') return 1;
+    if(a.rol!=='admin'&&b.rol==='admin') return -1;
+    return a.email.localeCompare(b.email);
+  });
+  if(!adminUsers.length) adminUsers=[{email:dataEmail(cu.email),rol:'admin'}];
+  if(!viewedEmail || !adminUsers.some(u=>u.email===viewedEmail)){
+    viewedEmail=(adminUsers.find(u=>u.rol!=='admin')||adminUsers[0])?.email||dataEmail(cu.email);
+  }
+  renderAdminUserSelect();
+}
+function renderAdminUserSelect(){
+  const sel=document.getElementById('admin-user-select');
+  if(!sel) return;
+  sel.innerHTML=adminUsers.map(u=>`<option value="${u.email}">${u.email}${u.rol==='admin'?' (admin)':''}</option>`).join('');
+  sel.value=viewedEmail;
+}
+async function selectAdminUser(email){
+  const next=dataEmail(email);
+  if(!next || next===viewedEmail) return;
+  if(diasDirty && !confirm('Hay cambios sin guardar en la planilla actual. ¿Cambiar de usuario igual?')) {
+    renderAdminUserSelect();
+    return;
+  }
+  viewedEmail=next;
+  diasDirty=false;
+  await loadCloud();
+  renderBonos();
+  renderBcfg();
+  onMC(true);
+  calcR();
+  renderAT();
+  setEditable(isAdm);
+  setCloud(true);
+}
 
 // --- HORAS FORMATO 24 h (HH:mm) ---
 function normalizeTime24(v){
@@ -952,12 +1144,12 @@ function saveBonosLocalBackup(){
   try{
     const all={};
     MESES.forEach(m=>{all[m]=MD[m]?.bonosSel||[];});
-    localStorage.setItem('bradem_sel_bonos',JSON.stringify(all));
+    localStorage.setItem(bonosBackupKey(),JSON.stringify(all));
   }catch(e){}
 }
 function loadBonosLocalBackup(){
   try{
-    const raw=localStorage.getItem('bradem_sel_bonos');
+    const raw=localStorage.getItem(bonosBackupKey());
     if(!raw) return;
     const all=JSON.parse(raw);
     MESES.forEach(m=>{
@@ -1039,23 +1231,23 @@ function defBonos(){
 
 async function loadCloud(){
   ldmsg('Cargando meses...');
-  const {data:mr}=await sb.from('bw_meses').select('*');
+  const owner=currentDataEmail();
+  const {data:mr}=await sb.from('bw_meses').select('*').eq('email',owner);
   MD={};
+  selBonos={};
   MESES.forEach(m=>{
     const r=mr?.find(x=>x.mes===m);
     if(r){
-      let dias=Array.isArray(r.dias)?r.dias:(typeof r.dias==='string'?JSON.parse(r.dias):[]);
-      const bonosSel=parseBonosSelField(r.bonos_sel);
+      const state=stateFromRow(r);
+      let dias=state.dias;
       if(m==='Mayo'&&(!dias||!dias.length)&&MAYO_IMPORT_DIAS.length){
-        const d=defMes('Mayo');
-        MD[m]={hrsOficina:d.hrs_oficina,hrsEvento:d.hrs_evento,gastos:d.gastos,adelantos:d.adelantos,dias:d.dias,bonosSel};
+        MD[m]={...stateFromDefault('Mayo'),bonosSel:state.bonosSel};
         upsertMes(m);
       }else{
-        MD[m]={hrsOficina:r.hrs_oficina||0,hrsEvento:r.hrs_evento||0,gastos:r.gastos||0,adelantos:r.adelantos||0,dias,bonosSel};
+        MD[m]=state;
       }
     } else {
-      const d=defMes(m);
-      MD[m]={hrsOficina:d.hrsOficina,hrsEvento:d.hrsEvento,gastos:d.gastos,adelantos:d.adelantos,dias:d.dias,bonosSel:[]};
+      MD[m]=stateFromDefault(m);
       upsertMes(m);
     }
   });
@@ -1078,13 +1270,9 @@ async function loadCloud(){
 async function upsertMes(m){
   const d=MD[m];
   if(d.bonosSel===undefined) syncSelBonosToMD(m);
-  const {error}=await sb.from('bw_meses').upsert({
-    mes:m,hrs_oficina:d.hrsOficina,hrs_evento:d.hrsEvento,
-    gastos:d.gastos,adelantos:d.adelantos,dias:d.dias,
-    bonos_sel:d.bonosSel||[]
-  });
-  if(!error) saveBonosLocalBackup();
-  return !error;
+  const ok=await saveMesForEmail(currentDataEmail(),m,d);
+  if(ok) saveBonosLocalBackup();
+  return ok;
 }
 async function upsertBonos(){
   const {error}=await sb.from('bw_bonos').upsert(BONOS.map(b=>({id:b.id,name:b.name,descripcion:b.desc,ars:b.ars})));
@@ -1098,7 +1286,9 @@ function setCloud(ok){
 
 async function initApp(){
   isAdm=cu.rol==='admin';
+  if(isAdm) await loadAdminUsers();
   await loadCloud();
+  if(isAdm) renderAdminUserSelect();
   renderBonos(); renderBcfg();
   onMC(true); calcR(); renderAT();
   fetchDolar();
@@ -1107,7 +1297,7 @@ async function initApp(){
 
   if(window._poll) clearInterval(window._poll);
   window._poll=setInterval(async()=>{
-    const {data:mr}=await sb.from('bw_meses').select('mes,hrs_oficina,hrs_evento,gastos,adelantos,dias,bonos_sel');
+    const {data:mr}=await sb.from('bw_meses').select('mes,email,hrs_oficina,hrs_evento,gastos,adelantos,dias,bonos_sel').eq('email',currentDataEmail());
     if(!mr) return;
     const curMes=curTab==='md'?document.getElementById('smd')?.value:null;
     if(curMes && (diasDirty||isEditingDias())) syncMergedToMD(curMes);
@@ -1311,6 +1501,7 @@ function isEditingDias(){
   return !!(el && document.getElementById('dtb')?.contains(el));
 }
 function applyMesFromServer(r){
+  if(r.email && dataEmail(r.email)!==currentDataEmail()) return;
   const dias=Array.isArray(r.dias)?r.dias:(typeof r.dias==='string'&&r.dias?JSON.parse(r.dias):[]);
   const bonosSel=parseBonosSelField(r.bonos_sel);
   MD[r.mes]={
@@ -1876,8 +2067,10 @@ async function accionSolicitud(id,accion,batch=false){
 
 async function aplicarSolicitud(s){
   const mes=s.mes;
-  if(!MD[mes]) MD[mes]={hrsOficina:0,hrsEvento:0,gastos:0,adelantos:0,dias:[]};
-  const m=MD[mes];
+  const owner=dataEmail(s.empleado_email);
+  const {state,error}=await fetchMesForEmail(owner,mes);
+  if(error||!state){showAlertCH('er','No se pudo cargar el registro del empleado.');return;}
+  const m=state;
 
   const nuevoDia={
     fecha:s.fecha, dia:s.dia, tipo:s.tipo,
@@ -1897,8 +2090,11 @@ async function aplicarSolicitud(s){
   });
   m.hrsOficina=hOf; m.hrsEvento=hEv; m.gastos=gas; m.adelantos=adel;
 
-  calcR(); renderAT();
-  if(curTab==='md' && document.getElementById('smd')?.value===mes){
+  if(owner===currentDataEmail()){
+    MD[mes]=m;
+    calcR(); renderAT();
+  }
+  if(owner===currentDataEmail() && curTab==='md' && document.getElementById('smd')?.value===mes){
     diasDirty=false;
     onMC(true);
     calcD();
@@ -1915,7 +2111,8 @@ async function aplicarSolicitud(s){
     </div>`;
     clearTimeout(flashEl._t); flashEl._t=setTimeout(()=>flashEl.innerHTML='',6000);
   }
-  await upsertMes(mes); setCloud(true);
+  const ok=await saveMesForEmail(owner,mes,m);
+  setCloud(ok);
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{

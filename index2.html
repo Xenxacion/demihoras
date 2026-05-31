@@ -347,13 +347,87 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
   content-visibility:auto;
   contain-intrinsic-size:1px 280px;
 }
-.lbox{flex:0 1 420px;width:auto;max-width:calc(100vw - 64px);margin:16px;padding:34px 28px 30px;backdrop-filter:none;-webkit-backdrop-filter:none;}
+.lbox{flex:0 0 auto;width:420px !important;max-width:calc(100vw - 64px) !important;margin:0;padding:34px 28px 30px;backdrop-filter:none;-webkit-backdrop-filter:none;}
 .fbtn{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
 .btn-rec{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
 .sol-card.pend{animation:none;}
 .alert{animation:alertPop .25s var(--ease-out) both;}
 .empty svg{animation:none;}
 .tb-logo:hover{filter:none;}
+
+/* GPU cold mode: fondo profesional, pero sin capas animadas ni blur en idle. */
+#loading-screen,
+#login-screen{
+  left:0 !important;
+  right:auto !important;
+  width:100vw !important;
+  max-width:100vw !important;
+}
+body::after,
+.auth-bg,
+.auth-orb,
+.auth-grid,
+.wrap::before,
+.wrap::after,
+.ph::before,
+.filters::before,
+.card::before,
+.sol-card::before,
+.sol-field::before,
+.stat::before,
+.alert::before,
+.empty::before{
+  display:none !important;
+}
+*,
+*::before,
+*::after{
+  filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  will-change:auto !important;
+}
+.ld-inner,
+.ld-mark,
+.ld-brand,
+.lbox,
+.lmark,
+.lbrand,
+.lfield-a,
+.lfield-b,
+.lbtn,
+.topbar,
+.stat,
+.ph,
+.filters,
+.card,
+.sol-card,
+.sol-actions,
+.empty,
+.alert{
+  animation:none !important;
+}
+.ld-bar-fill{
+  animation:none !important;
+  transform:none !important;
+  width:100%;
+  opacity:.28;
+}
+.sol-card:hover,
+.sol-field:hover,
+.stat:hover,
+.card:hover,
+.fbtn:hover,
+.fsel:hover{
+  box-shadow:0 6px 18px rgba(0,0,0,.22);
+}
+@media(max-width:600px){
+  .lbox{
+    width:calc(100vw - 96px) !important;
+    max-width:326px !important;
+    padding:34px 28px 30px;
+  }
+}
 
 /* Accesibilidad: reduce motion */
 @media (prefers-reduced-motion: reduce){
@@ -482,6 +556,39 @@ function rangoHora24(ini,fin){
 let cu=null;
 let allSolicitudes=[];
 let filtroEstado='pendiente';
+
+function dataEmail(email){
+  return String(email||'').trim().toLowerCase();
+}
+function emptyMesState(){
+  return {dias:[],hrsOf:0,hrsEv:0,gastos:0,adelantos:0};
+}
+function stateFromMesRow(r){
+  if(!r) return emptyMesState();
+  return {
+    dias:Array.isArray(r.dias)?r.dias:(typeof r.dias==='string'&&r.dias?JSON.parse(r.dias):[]),
+    hrsOf:Number(r.hrs_oficina)||0,
+    hrsEv:Number(r.hrs_evento)||0,
+    gastos:Number(r.gastos)||0,
+    adelantos:Number(r.adelantos)||0
+  };
+}
+async function fetchMesForEmpleado(email,mes){
+  const {data,error}=await sb.from('bw_meses').select('*').eq('email',dataEmail(email)).eq('mes',mes).limit(1);
+  if(error) return {state:null,error};
+  return {state:stateFromMesRow(data?.[0]),error:null};
+}
+async function saveMesForEmpleado(email,mes,state){
+  const owner=dataEmail(email);
+  const payload={email:owner,mes,hrs_oficina:state.hrsOf,hrs_evento:state.hrsEv,gastos:state.gastos,adelantos:state.adelantos,dias:state.dias};
+  const {data:exists,error:findError}=await sb.from('bw_meses').select('mes').eq('email',owner).eq('mes',mes).limit(1);
+  if(findError) return false;
+  const q=exists?.length
+    ? sb.from('bw_meses').update(payload).eq('email',owner).eq('mes',mes)
+    : sb.from('bw_meses').insert(payload);
+  const {error}=await q;
+  return !error;
+}
 
 function resolveRol(email,dbRol){
   if(dbRol) return dbRol;
@@ -619,15 +726,10 @@ async function aprobar(id){
   const card=document.getElementById('sc-'+id);
   const btns=card.querySelectorAll('button');
   btns.forEach(b=>{b.disabled=true;});
-  // 1. Load current mes data from Supabase
-  const {data:mr}=await sb.from('bw_meses').select('*').eq('mes',s.mes).single();
-  let diasActuales=[];
-  let hrsOf=0,hrsEv=0,gastos=0,adelantos=0;
-  if(mr){
-    diasActuales=Array.isArray(mr.dias)?mr.dias:(typeof mr.dias==='string'&&mr.dias?JSON.parse(mr.dias):[]);
-    hrsOf=mr.hrs_oficina||0;hrsEv=mr.hrs_evento||0;
-    gastos=mr.gastos||0;adelantos=mr.adelantos||0;
-  }
+  // 1. Load current mes data for this employee
+  const {state,error:loadError}=await fetchMesForEmpleado(s.empleado_email,s.mes);
+  if(loadError||!state){showAlert('er','Error al cargar el registro del empleado.');btns.forEach(b=>{b.disabled=false;});return;}
+  let diasActuales=state.dias;
   // 2. Merge this day into dias
   const existing=diasActuales.findIndex(d=>d.fecha===s.fecha);
   const newDay={fecha:s.fecha,dia:s.dia,tipo:s.tipo,horaInicio:fmtHora24(s.hora_inicio)||'',horaFin:fmtHora24(s.hora_fin)||'',horas:parseFloat(s.horas)||0,desc:s.descripcion||'',gastos:parseFloat(s.gastos)||0,detGastos:s.det_gastos||'',adelanto:parseFloat(s.adelanto)||0};
@@ -642,10 +744,9 @@ async function aprobar(id){
     nG+=parseFloat(d.gastos)||0;
     nA+=parseFloat(d.adelanto)||0;
   });
-  // 4. Upsert bw_meses
-  const {error:em}=await sb.from('bw_meses').upsert({
-    mes:s.mes,hrs_oficina:nO,hrs_evento:nE,gastos:nG,adelantos:nA,dias:diasActuales
-  });
+  // 4. Save bw_meses for the solicitud employee
+  const ok=await saveMesForEmpleado(s.empleado_email,s.mes,{dias:diasActuales,hrsOf:nO,hrsEv:nE,gastos:nG,adelantos:nA});
+  const em=ok?null:{message:'Error al actualizar el registro del empleado.'};
   if(em){showAlert('er','❌ Error al actualizar el registro: '+em.message);btns.forEach(b=>{b.disabled=false;});return;}
   // 5. Mark solicitud as aprobado
   const {error:es}=await sb.from('bw_solicitudes').update({estado:'aprobado'}).eq('id',id);
