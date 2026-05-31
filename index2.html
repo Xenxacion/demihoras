@@ -4,6 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>BRADEM — Panel Admin</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
@@ -332,6 +335,25 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 }
 .sol-card:active{transform:translateY(-1px) scale(.995);}
 .tb-logo:hover{filter:drop-shadow(0 0 18px rgba(34,211,238,.16));}
+
+/* Performance final: conserva el look, baja trabajo constante de GPU y pinta bajo demanda. */
+#loading-screen::before,#login-screen::before{animation:none;opacity:.7;}
+.auth-orb{filter:blur(18px);opacity:.38;will-change:transform;}
+.auth-orb::before,.auth-grid::after,.card::before,.stat::before,.alert::before,.empty::before{display:none;}
+.auth-grid{animation:none;opacity:.5;}
+.ld-mark,.ld-brand,.lmark{animation:none;}
+.topbar::before,.wrap::before,.wrap::after,.ph::before{animation:none;}
+.card,.stat,.sol-card,.sol-field{
+  content-visibility:auto;
+  contain-intrinsic-size:1px 280px;
+}
+.lbox{flex:0 1 420px;width:auto;max-width:calc(100vw - 64px);margin:16px;padding:34px 28px 30px;backdrop-filter:none;-webkit-backdrop-filter:none;}
+.fbtn{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
+.btn-rec{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
+.sol-card.pend{animation:none;}
+.alert{animation:alertPop .25s var(--ease-out) both;}
+.empty svg{animation:none;}
+.tb-logo:hover{filter:none;}
 
 /* Accesibilidad: reduce motion */
 @media (prefers-reduced-motion: reduce){
