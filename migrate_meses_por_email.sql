@@ -10,6 +10,22 @@ where email is null or trim(email) = '';
 
 alter table bw_meses alter column email set not null;
 
+-- La clave vieja por mes mezcla usuarios: no permite "Mayo" para mas de un email.
+-- La clave correcta es una fila por cada (email, mes).
+alter table bw_meses drop constraint if exists bw_meses_pkey;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'bw_meses'::regclass
+      and conname = 'bw_meses_pkey'
+  ) then
+    alter table bw_meses add constraint bw_meses_pkey primary key (email, mes);
+  end if;
+end $$;
+
 drop policy if exists "authenticated can select bw_meses" on bw_meses;
 drop policy if exists "admin manage bw_meses" on bw_meses;
 drop policy if exists "owner select bw_meses" on bw_meses;

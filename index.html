@@ -939,6 +939,7 @@ const sb=supabase.createClient(SB_URL,SB_KEY);
 
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const ADMIN_EMAILS=['bradem@gmail.com'];
+let initialMonthDefaultsApplied=false;
 function resolveRol(email,dbRol){
   if(dbRol) return dbRol;
   if(email&&ADMIN_EMAILS.includes(email.toLowerCase())) return 'admin';
@@ -952,6 +953,18 @@ let diasDirty=false,diasEditUntil=0;
 function dataEmail(email){
   return String(email||'').trim().toLowerCase();
 }
+function getCurrentMonthName(){
+  return MESES[new Date().getMonth()]||'Abril';
+}
+function applyInitialMonthDefaults(){
+  if(initialMonthDefaultsApplied) return;
+  initialMonthDefaultsApplied=true;
+  const mes=getCurrentMonthName();
+  ['smr','smd'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && [...el.options].some(o=>o.value===mes)) el.value=mes;
+  });
+}
 function currentDataEmail(){
   return dataEmail(isAdm&&viewedEmail?viewedEmail:cu?.email);
 }
@@ -959,13 +972,12 @@ function bonosBackupKey(email=currentDataEmail()){
   return `bradem_sel_bonos_${email||'anon'}`;
 }
 function stateFromDefault(m){
-  const d=defMes(m);
   return {
-    hrsOficina:Number(d.hrsOficina ?? d.hrs_oficina)||0,
-    hrsEvento:Number(d.hrsEvento ?? d.hrs_evento)||0,
-    gastos:Number(d.gastos)||0,
-    adelantos:Number(d.adelantos)||0,
-    dias:Array.isArray(d.dias)?d.dias:[],
+    hrsOficina:0,
+    hrsEvento:0,
+    gastos:0,
+    adelantos:0,
+    dias:[],
     bonosSel:[]
   };
 }
@@ -1217,7 +1229,6 @@ const MAYO_IMPORT_DIAS=[
   {fecha:'25/05/2026',dia:'LUN',tipo:'Evento',horaInicio:'',horaFin:'',horas:6,desc:'expo mate',gastos:1450,detGastos:'sube',adelanto:''}
 ];
 function defMes(m){
-  if(m==='Mayo') return {mes:m,hrs_oficina:8,hrs_evento:63,gastos:48850,adelantos:0,dias:MAYO_IMPORT_DIAS};
   return {mes:m,hrs_oficina:0,hrs_evento:0,gastos:0,adelantos:0,dias:[]};
 }
 function defBonos(){
@@ -1239,13 +1250,7 @@ async function loadCloud(){
     const r=mr?.find(x=>x.mes===m);
     if(r){
       const state=stateFromRow(r);
-      let dias=state.dias;
-      if(m==='Mayo'&&(!dias||!dias.length)&&MAYO_IMPORT_DIAS.length){
-        MD[m]={...stateFromDefault('Mayo'),bonosSel:state.bonosSel};
-        upsertMes(m);
-      }else{
-        MD[m]=state;
-      }
+      MD[m]=state;
     } else {
       MD[m]=stateFromDefault(m);
       upsertMes(m);
@@ -1289,6 +1294,7 @@ async function initApp(){
   if(isAdm) await loadAdminUsers();
   await loadCloud();
   if(isAdm) renderAdminUserSelect();
+  applyInitialMonthDefaults();
   renderBonos(); renderBcfg();
   onMC(true); calcR(); renderAT();
   fetchDolar();
