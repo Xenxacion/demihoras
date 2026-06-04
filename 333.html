@@ -736,12 +736,6 @@ body::after,
 
     <div id="tab-ra" class="tab-content">
       <div class="trow">
-        <div class="tbox adm" id="admin-user-box-ra" style="display:none;min-width:260px;">
-          <label>Usuario</label>
-          <select id="admin-user-select-ra" onchange="selectAdminUserRA(this.value)">
-            <option value="">Cargando usuarios...</option>
-          </select>
-        </div>
         <div class="tbox" style="max-width:200px;">
           <label>Mes seleccionado</label>
           <select id="smr" onchange="calcR()">
@@ -1067,22 +1061,10 @@ async function loadAdminUsers(){
   renderAdminUserSelect();
 }
 function renderAdminUserSelect(){
-  const opts=adminUsers.map(u=>`<option value="${u.email}">${u.email}${u.rol==='admin'?' (admin)':''}</option>`).join('');
-  ['admin-user-select','admin-user-select-ra'].forEach(id=>{
-    const sel=document.getElementById(id);
-    if(!sel) return;
-    sel.innerHTML=opts;
-    sel.value=viewedEmail;
-  });
-}
-async function selectAdminUserRA(email){
-  // Sync the md selector then delegate
-  const selMd=document.getElementById('admin-user-select');
-  if(selMd) selMd.value=email;
-  await selectAdminUser(email);
-  // Keep ra selector in sync after selectAdminUser may reset it
-  const selRa=document.getElementById('admin-user-select-ra');
-  if(selRa) selRa.value=viewedEmail;
+  const sel=document.getElementById('admin-user-select');
+  if(!sel) return;
+  sel.innerHTML=adminUsers.map(u=>`<option value="${u.email}">${u.email}${u.rol==='admin'?' (admin)':''}</option>`).join('');
+  sel.value=viewedEmail;
 }
 async function selectAdminUser(email){
   const next=dataEmail(email);
@@ -1100,7 +1082,6 @@ async function selectAdminUser(email){
     renderAdminUserSelect();
     return;
   }
-  renderAdminUserSelect();
   renderBonos();
   renderBcfg();
   onMC(true);
@@ -1236,13 +1217,9 @@ async function doLogin(){
   if(!email||!pass){err.textContent='Completá email y contraseña.';err.classList.add('show');return;}
   const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){err.textContent='Email o contraseña incorrectos.';err.classList.add('show');document.getElementById('lip').value='';return;}
-  const {data:rd}=await sb.from('bw_roles').select('rol').eq('email',email).maybeSingle();
+  const {data:rd}=await sb.from('bw_roles').select('rol').eq('email',email).single();
   const rol=resolveRol(email,rd?.rol);
   cu={email,rol,display:rol==='admin'?'Administrador':'Empleado'};
-  // Reset state from any previous session
-  MD={}; BONOS=[]; selBonos={}; dolar=null; dolarT=null;
-  viewedEmail=''; adminUsers=[]; initialMonthDefaultsApplied=false;
-  if(window._poll){clearInterval(window._poll);window._poll=null;}
   document.getElementById('login-screen').classList.add('hidden');
   setTimeout(()=>document.getElementById('login-screen').style.display='none',400);
   document.getElementById('app').style.display='block';
@@ -1252,16 +1229,12 @@ async function doLogin(){
 
 async function doLogout(){
   await sb.auth.signOut();
-  cu=null; isAdm=false; viewedEmail=''; adminUsers=[];
-  MD={}; BONOS=[]; selBonos={}; dolar=null; dolarT=null;
-  initialMonthDefaultsApplied=false;
-  if(window._poll){clearInterval(window._poll);window._poll=null;}
+  cu=null;
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app').style.display='none';
   document.getElementById('liu').value='';document.getElementById('lip').value='';
   document.querySelectorAll('.adm').forEach(el=>el.style.display='none');
-  document.getElementById('admin-user-box-ra').style.display='none';
 }
 
 // Importado desde horas.csv (Mayo 2026)
@@ -1400,7 +1373,6 @@ async function initApp(){
     showTab('ch');
   } else {
     document.querySelectorAll('.adm').forEach(el=>el.style.display='');
-    document.getElementById('admin-user-box-ra').style.display='';
     showTab('ra');
   }
 }
@@ -2244,10 +2216,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
   const {data:{session}}=await sb.auth.getSession();
   if(session){
     const email=session.user.email;
-    MD={}; BONOS=[]; selBonos={}; dolar=null; dolarT=null;
-    viewedEmail=''; adminUsers=[]; initialMonthDefaultsApplied=false;
-    if(window._poll){clearInterval(window._poll);window._poll=null;}
-    const {data:rd}=await sb.from('bw_roles').select('rol').eq('email',email).maybeSingle();
+    const {data:rd}=await sb.from('bw_roles').select('rol').eq('email',email).single();
     const rol=resolveRol(email,rd?.rol);
     cu={email,rol,display:rol==='admin'?'Administrador':'Empleado'};
     document.getElementById('loading-screen').classList.add('hidden');
