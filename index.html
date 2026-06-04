@@ -141,58 +141,52 @@ body::after{
 /* Micro-interacciones (hover/selección) */
 @keyframes selectPop{
   0%{transform:translate3d(0,0,0) scale(1);}
-  55%{transform:translate3d(0,-2px,0) scale(1.02);}
+  55%{transform:translate3d(0,-2px,0) scale(1.018);}
   100%{transform:translate3d(0,0,0) scale(1);}
 }
 .bcard:hover{
-  box-shadow:0 18px 44px rgba(0,0,0,.55),0 0 0 1px rgba(34,211,238,.16),0 0 28px rgba(168,85,247,.20);
-  transform:translateY(-4px) scale(1.01);
+  /* Simplificado vs versión original multicapa — igual impacto visual, menor costo */
+  box-shadow:0 14px 36px rgba(0,0,0,.48),0 0 0 1px rgba(34,211,238,.14);
+  transform:translateY(-3px) scale(1.008);
 }
-.bcard:active{transform:translateY(-2px) scale(.995);}
+.bcard:active{transform:translateY(-1px) scale(.997);}
 .bcard.sel{
-  box-shadow:0 18px 46px rgba(0,0,0,.55),0 0 0 1px rgba(34,211,238,.22),0 0 36px rgba(139,92,246,.22);
-  animation:selectPop .35s var(--ease-out) both;
+  box-shadow:0 14px 38px rgba(0,0,0,.50),0 0 0 1px rgba(34,211,238,.18);
+  animation:selectPop .32s var(--ease-out) both;
 }
-.bnone:hover{box-shadow:0 14px 38px rgba(0,0,0,.40);transform:translateX(6px);}
-.bnone.sel{animation:selectPop .35s var(--ease-out) both;}
-.tab:hover{color:#fff;text-shadow:0 0 22px rgba(34,211,238,.16);}
-.tab.on{animation:selectPop .35s var(--ease-out) both;}
+.bnone:hover{transform:translateX(5px);}
+.bnone.sel{animation:selectPop .32s var(--ease-out) both;}
+/* text-shadow no es GPU composited — removido del hover de tab */
+.tab:hover{color:#fff;}
+.tab.on{animation:selectPop .32s var(--ease-out) both;}
 .fbtn:hover,.fsel:hover,.bref:hover,.bsync:hover{
   transform:translateY(-1px);
-  box-shadow:0 14px 34px rgba(0,0,0,.38);
 }
 
 #loading-screen,#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(145deg,#0a1f30 0%,#1c3f5e 42%,#2d5f82 100%);transition:opacity .55s cubic-bezier(.4,0,.2,1),visibility .55s;}
 #loading-screen::before,#login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 40%,rgba(74,144,200,.15) 0%,transparent 40%),radial-gradient(circle at 70% 60%,rgba(30,122,82,.12) 0%,transparent 45%);opacity:.7;}
-@keyframes aurora{
-  0%,100%{opacity:.6;}
-  50%{opacity:.8;}
-}
+
 #loading-screen{z-index:99999;}
 #login-screen{z-index:9999;}
 #loading-screen.hidden,#login-screen.hidden{opacity:0;pointer-events:none;visibility:hidden;}
 .auth-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
-.auth-orb{position:absolute;border-radius:50%;filter:blur(18px);opacity:.40;animation:orbFloat 20s ease-in-out infinite;transition:opacity .3s;will-change:transform;}
-.auth-orb::before{content:'';position:absolute;inset:-20%;border-radius:50%;background:inherit;opacity:.25;}
-/* orbPulse removido — animar scale dentro de filter:blur es muy pesado */
-.auth-orb-1{width:340px;height:340px;background:#4a90c8;top:-100px;right:-80px;}
-.auth-orb-2{width:300px;height:300px;background:#1e7a52;bottom:-120px;left:-90px;animation-delay:-5s;}
-.auth-orb-3{width:220px;height:220px;background:#d4a84b;left:42%;top:38%;opacity:.22;animation-delay:-9s;}
+.auth-orb{position:absolute;border-radius:50%;opacity:.35;animation:orbFloat 22s ease-in-out infinite;transition:opacity .3s;will-change:transform;}
+/* Sin filter:blur — el blur es muy costoso (crea composite layer + GPU filter pass) */
+.auth-orb-1{width:340px;height:340px;background:radial-gradient(circle,#4a90c8 0%,rgba(74,144,200,.2) 70%,transparent 100%);top:-100px;right:-80px;}
+.auth-orb-2{width:300px;height:300px;background:radial-gradient(circle,#1e7a52 0%,rgba(30,122,82,.2) 70%,transparent 100%);bottom:-120px;left:-90px;animation-duration:28s;animation-delay:-7s;}
+.auth-orb-3{width:220px;height:220px;background:radial-gradient(circle,#d4a84b 0%,rgba(212,168,75,.15) 70%,transparent 100%);left:42%;top:38%;opacity:.20;animation-duration:18s;animation-delay:-11s;}
 .auth-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 75% 65% at 50% 45%,#000 15%,transparent 75%);opacity:.5;}
 
 /* Pausar animaciones cuando la pestaña no está visible (ahorra CPU/GPU) */
 html.paused *, html.paused *::before, html.paused *::after{animation-play-state:paused !important;}
 .auth-grid::after{display:none;}
-@keyframes gridGlow{
-  0%,100%{opacity:.3;}
-  50%{opacity:.5;}
-}
+
 .ld-inner{position:relative;z-index:2;text-align:center;padding:32px 24px;animation:heroIn .9s cubic-bezier(.16,1,.3,1) both;}
 .ld-mark{width:80px;height:80px;margin:0 auto 22px;border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:40px;font-weight:700;color:#fff;box-shadow:0 24px 60px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.1);}
 .ld-brand{font-size:clamp(36px,8vw,48px);font-weight:700;color:#fff;letter-spacing:.22em;padding-left:.22em;}
 .ld-tagline{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.8);letter-spacing:.2em;text-transform:uppercase;margin-top:10px;animation:fadeInUp .7s .15s cubic-bezier(.16,1,.3,1) both;}
 .ld-bar{width:220px;height:4px;background:rgba(255,255,255,.12);border-radius:4px;margin:32px auto 14px;overflow:hidden;}
-.ld-bar-fill{height:100%;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);animation:shimmerBar 1.6s ease-in-out infinite;border-radius:4px;}
+.ld-bar-fill{height:100%;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);animation:shimmerBar 1.5s ease-in-out infinite;border-radius:4px;will-change:transform;}
 .ld-msg{font-size:13px;color:rgba(255,255,255,.75);animation:fadeInUp .6s .3s cubic-bezier(.16,1,.3,1) both;min-height:1.2em;}
 .lbox{position:relative;z-index:2;background:rgba(255,255,255,.98);backdrop-filter:blur(24px);border-radius:22px;padding:38px 34px 32px;width:100%;max-width:420px;margin:20px;box-shadow:0 40px 80px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.12) inset,0 0 60px rgba(28,63,94,.1);animation:boxIn .85s cubic-bezier(.16,1,.3,1) both;}
 .lhero{text-align:center;margin-bottom:26px;padding-bottom:22px;border-bottom:1px solid #e5e7eb;}
@@ -217,10 +211,7 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 
 .topbar{background:linear-gradient(90deg,#153250,var(--accent));color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.12);animation:topbarIn .5s cubic-bezier(.16,1,.3,1) both;}
 .topbar::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);opacity:.3;}
-@keyframes topbarShine{
-  0%,100%{opacity:.2;}
-  50%{opacity:.5;box-shadow:0 2px 8px rgba(255,255,255,.15) inset;}
-}
+
 .topbar-brand{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.14em;display:flex;align-items:center;gap:10px;}
 .tb-logo{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.15);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;letter-spacing:0;transition:transform .2s, background .2s;}
 .tb-logo:hover{transform:rotate(10deg) scale(1.1);background:rgba(255,255,255,.25);}
@@ -234,10 +225,7 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 
 .tabs{display:flex;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 100%);padding:0 24px;overflow-x:auto;position:relative;}
 .tabs::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.15;}
-@keyframes tabLineGlow{
-  0%,100%{opacity:.2;transform:scaleX(.9);}
-  50%{opacity:.4;transform:scaleX(1);}
-}
+
 .tab{padding:14px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;margin-bottom:-1px;}
 .tab:hover{color:var(--text);}
 .tab.on{color:var(--accent);border-color:var(--accent);font-weight:600;}
@@ -245,24 +233,11 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 .wrap{max-width:min(1280px,100%);margin:0 auto;padding:28px 16px 60px;position:relative;z-index:1;}
 .wrap::before{content:'';position:absolute;top:-200px;left:-200px;width:500px;height:500px;background:radial-gradient(circle,rgba(28,63,94,.1) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
 .wrap::after{content:'';position:absolute;bottom:-200px;right:-200px;width:450px;height:450px;background:radial-gradient(circle,rgba(15,81,50,.08) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
-@keyframes floatBubble1{
-  0%,100%{transform:translate3d(0,0,0) scale(1);}
-  25%{transform:translate3d(12px,-10px,0) scale(1.04);}
-  50%{transform:translate3d(-8px,15px,0) scale(.98);}
-  75%{transform:translate3d(10px,8px,0) scale(1.02);}
-}
-@keyframes floatBubble2{
-  0%,100%{transform:translate3d(0,0,0) scale(1);}
-  33%{transform:translate3d(-10px,12px,0) scale(1.05);}
-  66%{transform:translate3d(12px,-8px,0) scale(.97);}
-}
+
 
 .dcard{background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;position:relative;overflow:hidden;}
 .dcard::before{display:none;}
-@keyframes cardGlow{
-  0%,100%{transform:translate(0,0);opacity:.04;}
-  50%{transform:translate(4%,4%);opacity:.12;}
-}
+
 .dbadge{min-width:130px;}
 .dlbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);}
 .dval{font-family:var(--mono);font-size:30px;font-weight:600;color:var(--accent);letter-spacing:-1px;line-height:1.1;margin-top:2px;transition:transform .2s;}
@@ -319,10 +294,7 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 
 .decard{background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:22px;position:relative;}
 .decard::before{display:none;}
-@keyframes decardGlow{
-  0%,100%{opacity:.05;}
-  50%{opacity:.12;}
-}
+
 .dehead{padding:11px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .dehead h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-family:var(--mono);transition:color .2s;}
 .decard:hover .dehead h3{color:var(--accent);}
@@ -349,8 +321,8 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 .dt th{padding:6px 4px;text-align:left;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.35px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface2);line-height:1.25;vertical-align:bottom;}
 .dt td{padding:4px 3px;border-bottom:1px solid var(--border);vertical-align:middle;overflow:hidden;}
 .dt tr:last-child td{border-bottom:none;}
-.dt td input,.dt td select{width:100%;min-width:0;max-width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 3px;font-size:11px;font-family:var(--sans);color:var(--text);background:rgba(255,255,255,.06);outline:none;transition:border-color .15s,box-shadow .15s, transform .1s;box-sizing:border-box;}
-.dt td input:focus,.dt td select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(28,63,94,.1);transform:scale(1.02);}
+.dt td input,.dt td select{width:100%;min-width:0;max-width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 3px;font-size:11px;font-family:var(--sans);color:var(--text);background:rgba(255,255,255,.06);outline:none;transition:border-color .15s,box-shadow .15s;box-sizing:border-box;}
+.dt td input:focus,.dt td select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(28,63,94,.12);}
 .dt td input:hover:not(:focus),.dt td select:hover:not(:focus){border-color:var(--border2);}
 .dt td input[type=number]{text-align:center;font-weight:600;}
 .dt td.c-desc input,.dt td.c-det input{text-overflow:ellipsis;white-space:nowrap;overflow:hidden;}
@@ -366,10 +338,7 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 
 .rcard{background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:18px;position:relative;}
 .rcard::before{display:none;}
-@keyframes rcardGlow{
-  0%,100%{opacity:.04;}
-  50%{opacity:.1;}
-}
+
 .rhead{padding:11px 18px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);transition:color .2s;}
 .rcard:hover .rhead{color:var(--accent);}
 .rbody{padding:18px;}
@@ -388,10 +357,7 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 
 .alert{padding:10px 14px;border-radius:7px;font-size:12px;margin-bottom:14px;display:flex;align-items:center;gap:8px;animation:alertPop .35s cubic-bezier(.16,1,.3,1) both;position:relative;overflow:hidden;}
 .alert::before{display:none;}
-@keyframes alertShine{
-  0%,100%{opacity:.9;}
-  50%{opacity:1;}
-}
+
 .aok{background:var(--green-bg);color:var(--green);border:1px solid #a8d5b5;}
 .awn{background:var(--amber-bg);color:var(--amber);border:1px solid #f0d080;}
 .aer{background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;}
@@ -411,73 +377,45 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 @media(max-width:600px){.wrap{padding:16px 12px 60px;}.topbar{padding:0 14px;}.tabs{padding:0 12px;}.bgrid{grid-template-columns:1fr 1fr;}}
 
 /* ── ANIMATIONS ── */
-@keyframes fadeInUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-@keyframes fadeRowIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-@keyframes alertPop{0%{opacity:0;transform:translateY(-10px) scale(.96);}100%{opacity:1;transform:translateY(0) scale(1);}}
-@keyframes rowApprove{0%{opacity:1;max-height:120px;}100%{opacity:0;transform:translateX(24px);max-height:0;margin:0;padding:0;overflow:hidden;}}
-@keyframes rowDelete{0%{opacity:1;}100%{opacity:0;transform:translateX(-24px);max-height:0;overflow:hidden;}}
-@keyframes orbFloat{
-  0%,100%{transform:translate3d(0,0,0) scale(1);}
-  50%{transform:translate3d(10px,-8px,0) scale(1.02);}
-}
-@keyframes gridPulse{
-  0%,100%{opacity:.4;}
-  50%{opacity:.7;}
-}
-@keyframes heroIn{from{opacity:0;transform:scale(.92) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
-@keyframes markPulse{
-  0%,100%{transform:scale(1);box-shadow:0 20px 50px rgba(0,0,0,.25);}
-  50%{transform:scale(1.08);box-shadow:0 25px 60px rgba(0,0,0,.35);}
-}
-@keyframes brandGlow{
-  0%,100%{color:#fff;text-shadow:0 0 20px rgba(255,255,255,.1);}
-  50%{color:#fff;text-shadow:0 0 35px rgba(255,255,255,.25);}
-}
-@keyframes shimmerBar{
-  0%{transform:translateX(-100%);}
-  100%{transform:translateX(100%);}
-}
-@keyframes boxIn{from{opacity:0;transform:translateY(28px) scale(.94);}to{opacity:1;transform:translateY(0) scale(1);}}
+/* ── @KEYFRAMES ── solo transform/opacity → siempre GPU-composited ── */
+/* Entradas de página */
+@keyframes fadeInUp{from{opacity:0;transform:translate3d(0,16px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes fadeRowIn{from{opacity:0;transform:translate3d(0,8px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes cardReveal{from{opacity:0;transform:translate3d(0,12px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes slideInLeft{from{opacity:0;transform:translate3d(-20px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes slideInRight{from{opacity:0;transform:translate3d(20px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes slideDown{from{opacity:0;transform:translate3d(0,-10px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes topbarIn{from{opacity:0;transform:translate3d(0,-100%,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+/* Login/loading */
+@keyframes heroIn{from{opacity:0;transform:scale(.92) translate3d(0,20px,0);}to{opacity:1;transform:scale(1) translate3d(0,0,0);}}
+@keyframes boxIn{from{opacity:0;transform:translate3d(0,28px,0) scale(.94);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes markIn{from{opacity:0;transform:scale(.5) rotate(-12deg);}to{opacity:1;transform:scale(1) rotate(0);}}
-@keyframes brandIn{from{opacity:0;letter-spacing:.4em;}to{opacity:1;letter-spacing:.16em;}}
-@keyframes fieldIn{from{opacity:0;transform:translateX(-12px);}to{opacity:1;transform:translateX(0);}}
-@keyframes btnShine{to{transform:translateX(120%);}}
-@keyframes shakeIn{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
-@keyframes topbarIn{from{opacity:0;transform:translateY(-100%);}to{opacity:1;transform:translateY(0);}}
-@keyframes cardReveal{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-@keyframes slideInLeft{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:translateX(0);}}
-@keyframes slideInRight{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+/* brandIn: antes animaba letter-spacing (fuerza layout en cada frame); ahora solo opacity+translate */
+@keyframes brandIn{from{opacity:0;transform:translate3d(0,6px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes fieldIn{from{opacity:0;transform:translate3d(-12px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes btnShine{to{transform:translate3d(120%,0,0);}}
+@keyframes shakeIn{0%,100%{transform:translate3d(0,0,0);}20%,60%{transform:translate3d(-6px,0,0);}40%,80%{transform:translate3d(6px,0,0);}}
+/* Shimmer de la barra de carga */
+@keyframes shimmerBar{from{transform:translate3d(-100%,0,0);}to{transform:translate3d(100%,0,0);}}
+/* Alertas */
+@keyframes alertPop{from{opacity:0;transform:translate3d(0,-10px,0) scale(.96);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
+/* Solicitudes: rowApprove/Delete antes usaban max-height (causa layout); ahora solo transform+opacity */
+@keyframes rowApprove{from{opacity:1;transform:translate3d(0,0,0);}to{opacity:0;transform:translate3d(24px,0,0);}}
+@keyframes rowDelete{from{opacity:1;transform:translate3d(0,0,0);}to{opacity:0;transform:translate3d(-24px,0,0);}}
+/* Orbs del fondo auth */
+@keyframes orbFloat{
+  0%,100%{transform:translate3d(0,0,0);}
+  50%{transform:translate3d(10px,-8px,0);}
+}
+/* Micro-interacciones */
 @keyframes scaleIn{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:scale(1);}}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-@keyframes glow{
-  0%,100%{box-shadow:0 0 20px rgba(28,63,94,.15);}
-  50%{box-shadow:0 0 35px rgba(28,63,94,.25);}
-}
-@keyframes ripple{
-  0%{transform:scale(0);opacity:.8;}
-  100%{transform:scale(2);opacity:0;}
-}
-@keyframes bounceIn{
-  0%{opacity:0;transform:scale(.6);}
-  50%{transform:scale(1.08);}
-  100%{opacity:1;transform:scale(1);}
-}
-@keyframes slideDown{
-  from{opacity:0;transform:translateY(-10px);}
-  to{opacity:1;transform:translateY(0);}
-}
-@keyframes rotateIn{
-  from{opacity:0;transform:scale(.6);}
-  to{opacity:1;transform:scale(1);}
-}
-@keyframes pulseSoft{
-  0%,100%{opacity:.85;}
-  50%{opacity:1;}
-}
-@keyframes borderGlow{
-  0%,100%{opacity:.2;}
-  50%{opacity:.4;}
-}
+@keyframes bounceIn{0%{opacity:0;transform:scale(.6);}55%{transform:scale(1.07);}100%{opacity:1;transform:scale(1);}}
+@keyframes selectPop{from{transform:translate3d(0,0,0) scale(1);}55%{transform:translate3d(0,-2px,0) scale(1.015);}to{transform:translate3d(0,0,0) scale(1);}}
+@keyframes tabLine{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+/* Spinner del botón actualizar */
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+@keyframes pulseSoft{0%,100%{opacity:.8;}50%{opacity:1;}}
 
 .tab-content{animation:fadeInUp .35s cubic-bezier(.16,1,.3,1) both;}
 .alert{animation:alertPop .35s cubic-bezier(.16,1,.3,1) both;}
@@ -546,108 +484,78 @@ html.paused *, html.paused *::before, html.paused *::after{animation-play-state:
 .badd{transition:all .15s;}
 .badd:hover{transform:translateX(4px);}
 
-/* Performance final: menos repaints y render diferido sin cambiar la estetica. */
+/* ── Performance final: menos repaints y render diferido sin cambiar la estética ── */
 .lbox{backdrop-filter:none;-webkit-backdrop-filter:none;}
+/* content-visibility: evita renderizar off-screen; contain-intrinsic-size previene layout shift */
 .tab-content,.dcard,.decard,.rcard,.atable,.tbox{
   content-visibility:auto;
   contain-intrinsic-size:1px 520px;
 }
+/* contain:layout style en tarjetas animadas: las transiciones/animaciones de .bcard
+   no pueden causar reflow en el resto del documento */
+.bcard,.bnone{contain:layout style;}
 .lbox{flex:0 0 auto;width:420px !important;max-width:calc(100vw - 64px) !important;margin:0;padding:34px 28px 30px;}
-.bnone{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
-.bref{transition:border-color .15s,background .15s,color .15s,transform .15s,box-shadow .15s;}
+/* Transiciones explícitas (sin shorthand 'all' que evalúa TODAS las propiedades) */
+.bnone{transition:border-color .15s,background .15s,color .15s,transform .15s;}
+.bref{transition:border-color .15s,background .15s,color .15s,transform .15s;}
 .badd{transition:border-color .15s,background .15s,color .15s,transform .15s;}
 .tab{transition:color .15s,border-color .18s,transform .15s;}
 
-/* GPU cold mode: nada decorativo queda animando o componiendo en idle. */
-#loading-screen,
-#login-screen{
-  left:0 !important;
-  right:auto !important;
-  width:100vw !important;
-  max-width:100vw !important;
-}
-body::after,
-.auth-bg,
-.auth-orb,
-.auth-grid,
-.wrap::before,
-.wrap::after,
-.tabs::before,
-.dcard::before,
-.decard::before,
-.rcard::before,
-.atable::before,
-.alert::before{
-  display:none !important;
-}
-*,
-*::before,
-*::after{
-  filter:none !important;
-  backdrop-filter:none !important;
-  -webkit-backdrop-filter:none !important;
-  will-change:auto !important;
-}
-.ld-inner,
-.ld-tagline,
-.ld-msg,
-.lbox,
-.lmark,
-.lbrand,
-.lfield-a,
-.lfield-b,
-.lbtn,
-.topbar,
-.tabs,
-.tab-content,
-.dcard,
-.decard,
-.rcard,
-.anim-row,
-.stitle,
-.rtot,
-.alert,
-.badge-pending{
-  animation:none !important;
-}
-.ld-bar-fill{
-  animation:none !important;
-  transform:none !important;
-  width:100%;
-  opacity:.28;
-}
-.dy{animation:none !important;}
-.bcard:hover,
-.bnone:hover,
-.fbtn:hover,
-.fsel:hover,
-.bref:hover,
-.bsync:hover,
-.decard:hover,
-.rcard:hover,
-.dcard:hover{
-  box-shadow:0 6px 18px rgba(0,0,0,.22);
-}
-@media(max-width:600px){
-  .lbox{
-    width:calc(100vw - 96px) !important;
-    max-width:326px !important;
-    padding:34px 28px 30px;
-  }
+
+/* ── PERFORMANCE: selectivo y quirúrgico ── */
+
+/* Pantallas de auth: posición correcta en todos los viewports */
+#loading-screen,#login-screen{
+  left:0 !important;right:auto !important;
+  width:100vw !important;max-width:100vw !important;
 }
 
-/* Accesibilidad: reduce motion */
-@media (prefers-reduced-motion: reduce){
-  body{background-attachment:initial;}
-  body::after,body::before,
-  .auth-orb,.auth-orb::before,.auth-grid,.auth-grid::after,
-  .wrap::before,.wrap::after,
-  .dcard::before,.decard::before,.rcard::before,.atable::before,.alert::before{
-    animation:none !important;
-    transform:none !important;
+/* Pseudo-elementos puramente decorativos → fuera del árbol de composición */
+body::after,
+.wrap::before,.wrap::after,
+.tabs::before,
+.dcard::before,.decard::before,.rcard::before,
+.atable::before,.alert::before{
+  display:none !important;
+}
+
+/* backdrop-filter genera stacking context y textura extra — off globalmente */
+*,*::before,*::after{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* auth-orb: sin filter:blur (muy costoso), animación liviana con will-change */
+.auth-orb{
+  filter:none !important;
+  will-change:transform;
+}
+
+/* ld-bar-fill: shimmer continuo → promover a su propia capa */
+.ld-bar-fill{will-change:transform;}
+
+/* Hover simplificado: 1 sola box-shadow en lugar de multicapa */
+.bcard:hover,.bnone:hover,.fbtn:hover,.fsel:hover,
+.bref:hover,.bsync:hover,.decard:hover,.rcard:hover,.dcard:hover{
+  box-shadow:0 6px 18px rgba(0,0,0,.22);
+}
+
+/* Mobile */
+@media(max-width:600px){
+  .lbox{width:calc(100vw - 96px) !important;max-width:326px !important;padding:34px 28px 30px;}
+}
+
+/* ── ACCESIBILIDAD: prefers-reduced-motion ── */
+/* Para usuarios que prefieren menos movimiento: deshabilitar todas las animaciones y transiciones */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
   }
-  .bcard,.bnone,.fbtn,.fsel,.tab,.bref,.bsync{animation:none !important;}
-  *{scroll-behavior:auto !important;}
+  .auth-orb{animation:none !important;will-change:auto;}
+  .ld-bar-fill{animation:none !important;will-change:auto;width:100%;opacity:.4;}
 }
 </style>
 </head>
@@ -2265,10 +2173,33 @@ window.addEventListener('DOMContentLoaded',async()=>{
   }
 });
 
-// Performance: pausar animaciones cuando la pestaña no está visible
+// Performance: pausar animaciones cuando la pestaña no está visible (ahorra CPU/GPU en idle)
 document.addEventListener('visibilitychange',()=>{
   document.documentElement.classList.toggle('paused',document.hidden);
 });
+
+// Cleanup de will-change post-animación: libera la capa GPU cuando ya no se necesita.
+// Se aplica a elementos con animaciones de entrada (one-shot), no a los continuos (auth-orb, ld-bar-fill).
+(function(){
+  const ONE_SHOT_SELECTORS=[
+    '.ld-inner','.lbox','.lmark','.lbrand','.topbar',
+    '.tab-content','.dcard','.decard','.rcard','.stitle','.alert'
+  ];
+  function removeWillChange(el){
+    el.addEventListener('animationend',()=>{
+      el.style.willChange='auto';
+    },{once:true});
+  }
+  // Observar cuando los elementos entran al DOM y limpiar will-change al terminar la animación
+  const mo=new MutationObserver(()=>{
+    ONE_SHOT_SELECTORS.forEach(sel=>{
+      document.querySelectorAll(sel).forEach(el=>{
+        if(!el._wcClean){el._wcClean=true;removeWillChange(el);}
+      });
+    });
+  });
+  mo.observe(document.body,{childList:true,subtree:true});
+})();
 </script>
 </body>
 </html>
