@@ -21,23 +21,42 @@ create table if not exists bw_roles (
   rol   text not null
 );
 
--- Bonos configurables
+-- Bonos configurables (porcentajes extra)
 create table if not exists bw_bonos (
   id          integer primary key,
   name        text,
   descripcion text,
-  ars         numeric default 0
+  porc        numeric default 0,
+  tipo        text default 'porcentaje' check (tipo in ('porcentaje','fijo')),
+  valor       numeric default 0
 );
+
+-- Configuración global (tarifas, etc)
+create table if not exists bw_config (
+  key   text primary key,
+  value numeric default 0
+);
+
+-- Insertar valores por defecto de tarifas
+insert into bw_config (key, value) values
+  ('tarifa_oficina', 7000),
+  ('tarifa_evento', 7000),
+  ('porc_extra', 50)
+on conflict (key) do nothing;
 
 -- Registro mensual de horas por empleado
 create table if not exists bw_meses (
-  mes         text not null,
-  hrs_oficina numeric default 0,
-  hrs_evento  numeric default 0,
-  gastos      numeric default 0,
-  adelantos   numeric default 0,
-  dias        jsonb default '[]'::jsonb,
-  email       text default 'neienowo@gmail.com'
+  mes            text not null,
+  hrs_oficina    numeric default 0,
+  hrs_evento     numeric default 0,
+  gastos         numeric default 0,
+  adelantos      numeric default 0,
+  dias           jsonb default '[]'::jsonb,
+  bonos_sel      jsonb default '[]'::jsonb,
+  tarifa_oficina numeric default 7000,
+  tarifa_evento  numeric default 7000,
+  email          text default 'neienowo@gmail.com',
+  primary key (email, mes)
 );
 
 -- Solicitudes de horas pendientes de aprobación
@@ -48,6 +67,8 @@ create table if not exists bw_solicitudes (
   fecha          text not null,
   dia            text not null,
   tipo           text not null,
+  hora_inicio    text default '',
+  hora_fin       text default '',
   horas          numeric not null,
   descripcion    text default '',
   gastos         numeric default 0,
@@ -64,6 +85,7 @@ alter table bw_roles       enable row level security;
 alter table bw_bonos       enable row level security;
 alter table bw_meses       enable row level security;
 alter table bw_solicitudes enable row level security;
+alter table bw_config      enable row level security;
 
 
 -- ── 4. POLÍTICAS ────────────────────────────────────────────
@@ -81,6 +103,17 @@ create policy "authenticated can select bw_bonos"
 drop policy if exists "admin manage bw_bonos" on bw_bonos;
 create policy "admin manage bw_bonos"
   on bw_bonos for all to authenticated
+  using (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'))
+  with check (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
+
+-- bw_config (tarifas)
+drop policy if exists "authenticated can select bw_config" on bw_config;
+create policy "authenticated can select bw_config"
+  on bw_config for select to authenticated using (true);
+
+drop policy if exists "admin manage bw_config" on bw_config;
+create policy "admin manage bw_config"
+  on bw_config for all to authenticated
   using (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'))
   with check (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
 
@@ -119,14 +152,21 @@ create policy "admin delete"
   on bw_solicitudes for delete to authenticated
   using (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
 
+alter table bw_bonos add column if not exists tipo text default 'porcentaje';
+alter table bw_bonos add column if not exists valor numeric default 0;
+alter table bw_bonos drop constraint if exists bw_bonos_tipo_check;
+update bw_bonos set valor = coalesce(valor, porc, 0), tipo = coalesce(tipo, 'porcentaje');
+alter table bw_bonos add constraint bw_bonos_tipo_check check (tipo in ('porcentaje','fijo'));
+
 
 -- ── 5. REALTIME ─────────────────────────────────────────────
 
 alter table bw_meses       replica identity full;
 alter table bw_solicitudes replica identity full;
+alter table bw_config      replica identity full;
 
 drop publication if exists supabase_realtime;
-create publication supabase_realtime for table bw_meses, bw_solicitudes;
+create publication supabase_realtime for table bw_meses, bw_solicitudes, bw_config;
 
 
 -- ── 6. DATOS INICIALES — ROLES ──────────────────────────────
@@ -141,15 +181,13 @@ insert into bw_roles (email, rol) values ('neienowo@gmail.com', 'empleado')
 
 
 -- ── 7. DATOS INICIALES — BONOS ──────────────────────────────
-insert into bw_bonos (id, name, descripcion, ars) values
-  (1, 'Bono 1 — Presentismo',    'Sin ausencias en el mes',         5000),
-  (2, 'Bono 2 — Evento Especial','Participación en evento especial', 10000),
-  (3, 'Bono 3 — Horas Extra',    'Superar 160 hrs en el mes',        15000),
-  (4, 'Bono 4 — Productividad',  'Objetivos del mes cumplidos',      20000)
-on conflict (id) do update set
-  name        = excluded.name,
-  descripcion = excluded.descripcion,
-  ars         = excluded.ars;
+-- Bonos como porcentajes extra que se aplican POR DÍA
+insert into bw_bonos (id, name, descripcion, porc, tipo, valor) values
+  (1, 'Bono 1 — Presentismo',    'Sin ausencias en el mes',         10, 'porcentaje', 10),
+  (2, 'Bono 2 — Evento Especial','Participación en evento especial', 15, 'porcentaje', 15),
+  (3, 'Bono 3 — Horas Extra',    'Superar 160 hrs en el mes',        20, 'porcentaje', 20),
+  (4, 'Bono 4 — Productividad',  'Objetivos del mes cumplidos',      25, 'porcentaje', 25)
+on conflict (id) do nothing;
 
 
 -- ── FIN DEL BACKUP ──────────────────────────────────────────
