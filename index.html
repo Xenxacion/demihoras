@@ -2042,10 +2042,24 @@
                 scroll-behavior: smooth;
                 padding-right: 4px;
             }
+            #su-list {
+                max-height: min(58vh, 520px);
+                overflow-y: auto;
+                overflow-x: hidden;
+                scroll-behavior: smooth;
+                padding-right: 4px;
+            }
             #chtbody::-webkit-scrollbar {
                 width: 8px;
             }
+            #su-list::-webkit-scrollbar {
+                width: 8px;
+            }
             #chtbody::-webkit-scrollbar-thumb {
+                background: var(--border2);
+                border-radius: 4px;
+            }
+            #su-list::-webkit-scrollbar-thumb {
                 background: var(--border2);
                 border-radius: 4px;
             }
@@ -2159,6 +2173,7 @@
             #tab-ra,
             #tab-md,
             #tab-ch,
+            #tab-su,
             #tab-cfg {
                 transition:
                     opacity 0.18s ease,
@@ -2202,6 +2217,18 @@
             .dcard:hover {
                 box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
                 transform: translateY(-2px);
+            }
+            @media (hover: none) {
+                .tab:hover,
+                .bcard:hover,
+                .decard:hover,
+                .rcard:hover,
+                .dcard:hover,
+                .bdl:hover,
+                .bsave:hover:not(:disabled) {
+                    transform: none;
+                    box-shadow: none;
+                }
             }
             .bnone {
                 transition: all 0.15s;
@@ -2629,6 +2656,33 @@
                     width: 100%;
                 }
             }
+
+            .tabs {
+                max-width: 100vw;
+                overflow-x: auto !important;
+                overflow-y: hidden;
+                overscroll-behavior-x: contain;
+                scrollbar-width: thin;
+            }
+
+            .tabs::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .tabs::-webkit-scrollbar-thumb {
+                background: var(--border2);
+                border-radius: 999px;
+            }
+
+            .tab {
+                flex: 0 0 auto;
+            }
+
+            html,
+            body {
+                max-width: 100%;
+                overflow-x: hidden;
+            }
         </style>
     </head>
     <body>
@@ -2716,6 +2770,9 @@
                 </div>
                 <div class="tab" onclick="showTab('ch')" id="tab-btn-ch">
                     📤 Cargar Horas
+                </div>
+                <div class="tab" onclick="showTab('su')" id="tab-btn-su">
+                    Sueldos
                 </div>
                 <div
                     class="tab adm"
@@ -2930,7 +2987,9 @@
                                 id="smd"
                                 onchange="
                                     diasDirty = false;
+                                    resetMonthlySueldoForm();
                                     onMC(true);
+                                    renderMonthlySueldos();
                                 "
                             >
                                 <option>Enero</option>
@@ -3126,6 +3185,66 @@
                                     <tbody id="dtb"></tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                    <div class="decard">
+                        <div class="dehead">
+                            <h3>Sueldos del mes</h3>
+                            <span class="saved" id="md-su-saved">Guardado en la nube</span>
+                        </div>
+                        <div class="debody">
+                            <div class="rbody" id="md-su-resumen" style="padding: 0 0 14px"></div>
+                            <input type="hidden" id="md-su-id" />
+                            <div class="degrid">
+                                <div class="def">
+                                    <label>Fecha de pago</label>
+                                    <input type="date" id="md-su-fecha" />
+                                </div>
+                                <div class="def">
+                                    <label>Monto pagado ($)</label>
+                                    <input
+                                        type="number"
+                                        id="md-su-monto"
+                                        min="0"
+                                        step="100"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div class="def">
+                                    <label>Metodo</label>
+                                    <select id="md-su-metodo">
+                                        <option value="transferencia">Transferencia</option>
+                                        <option value="efectivo">Efectivo</option>
+                                        <option value="mercado_pago">Mercado Pago</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div class="def">
+                                    <label>Estado del sueldo</label>
+                                    <select id="md-su-estado">
+                                        <option value="parcial">Parcial</option>
+                                        <option value="completo">Completo</option>
+                                        <option value="falta_pagar">Falta pagar</option>
+                                    </select>
+                                </div>
+                                <div class="def">
+                                    <label>Nota</label>
+                                    <input
+                                        type="text"
+                                        id="md-su-nota"
+                                        placeholder="Ej: pago parcial, saldo final"
+                                    />
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                                <button class="bsave" id="md-su-save" onclick="saveMonthlySueldo()">
+                                    Guardar pago
+                                </button>
+                                <button class="bsave" id="md-su-cancel" style="display:none;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="resetMonthlySueldoForm()">
+                                    Cancelar edicion
+                                </button>
+                            </div>
+                            <div id="md-su-list" style="margin-top: 14px"></div>
                         </div>
                     </div>
                     <div class="rcard">
@@ -3572,6 +3691,130 @@
                     </div>
                 </div>
 
+                <div id="tab-su" class="tab-content" style="display: none">
+                    <div class="trow">
+                        <div
+                            class="tbox adm"
+                            id="admin-user-box-su"
+                            style="display: none; min-width: 260px"
+                        >
+                            <label>Usuario</label>
+                            <select
+                                id="admin-user-select-su"
+                                onchange="selectAdminUser(this.value)"
+                            >
+                                <option value="">Cargando usuarios...</option>
+                            </select>
+                        </div>
+                        <div class="tbox" style="max-width: 220px">
+                            <label>Mes del sueldo</label>
+                            <select id="su-mes" onchange="renderSueldos()">
+                                <option>Enero</option>
+                                <option>Febrero</option>
+                                <option>Marzo</option>
+                                <option selected>Abril</option>
+                                <option>Mayo</option>
+                                <option>Junio</option>
+                                <option>Julio</option>
+                                <option>Agosto</option>
+                                <option>Septiembre</option>
+                                <option>Octubre</option>
+                                <option>Noviembre</option>
+                                <option>Diciembre</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="decard">
+                        <div class="dehead">
+                            <h3>Registrar sueldo pagado</h3>
+                            <span class="saved" id="svsu">Guardado en la nube</span>
+                        </div>
+                        <div class="debody">
+                            <input type="hidden" id="su-id" />
+                            <div class="degrid">
+                                <div class="def">
+                                    <label>Fecha de pago</label>
+                                    <input type="date" id="su-fecha" />
+                                </div>
+                                <div class="def">
+                                    <label>Monto pagado ($)</label>
+                                    <input
+                                        type="number"
+                                        id="su-monto"
+                                        min="0"
+                                        step="100"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div class="def">
+                                    <label>Metodo</label>
+                                    <select id="su-metodo">
+                                        <option value="transferencia">Transferencia</option>
+                                        <option value="efectivo">Efectivo</option>
+                                        <option value="mercado_pago">Mercado Pago</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div class="def">
+                                    <label>Estado del sueldo</label>
+                                    <select id="su-estado">
+                                        <option value="parcial">Parcial</option>
+                                        <option value="completo">Completo</option>
+                                        <option value="falta_pagar">Falta pagar</option>
+                                    </select>
+                                </div>
+                                <div class="def">
+                                    <label>Nota</label>
+                                    <input
+                                        type="text"
+                                        id="su-nota"
+                                        placeholder="Ej: sueldo completo, diferencia, bono"
+                                    />
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                                <button class="bsave" id="su-save" onclick="saveSueldo()">
+                                    Guardar pago de sueldo
+                                </button>
+                                <button class="bsave" id="su-cancel" style="display:none;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="resetSueldoForm()">
+                                    Cancelar edicion
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rcard" style="margin-top: 16px">
+                        <div class="rhead">Estado del sueldo</div>
+                        <div class="rbody" id="su-resumen"></div>
+                    </div>
+
+                    <div class="decard" style="margin-top: 16px">
+                        <div class="dehead">
+                            <h3>Lista de pagos</h3>
+                            <button
+                                class="bsave bsave-sm"
+                                onclick="loadSueldos(true)"
+                            >
+                                Actualizar
+                            </button>
+                        </div>
+                        <div class="debody" style="padding: 10px 16px 16px">
+                            <div id="su-list">
+                                <div
+                                    style="
+                                        text-align: center;
+                                        color: var(--muted);
+                                        padding: 24px;
+                                    "
+                                >
+                                    Cargando...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="tab-cfg" class="tab-content" style="display: none">
                     <div class="decard">
                         <div class="dehead">
@@ -3614,6 +3857,7 @@
             const ADMIN_EMAILS = ["bradem@gmail.com"];
             const DEFAULT_VIEW_EMAIL = "neienowo@gmail.com";
             let initialMonthDefaultsApplied = false;
+            let cargaHorasDateApplied = false;
             function resolveRol(email, dbRol) {
                 if (dbRol) return dbRol;
                 if (email && ADMIN_EMAILS.includes(email.toLowerCase()))
@@ -3627,6 +3871,7 @@
                 adminUsers = [];
             let MD = {},
                 BONOS = [],
+                SUELDOS = [],
                 dolar = null,
                 dolarT = null,
                 selBonos = {},
@@ -3686,6 +3931,7 @@
                 calcR();
                 calcD();
                 renderBonos();
+                if (curTab === "su") renderSueldos();
             }
 
             async function loadTarifas() {
@@ -3831,6 +4077,29 @@
                     if (el && [...el.options].some((o) => o.value === mes))
                         el.value = mes;
                 });
+            }
+            function applyCargaHorasCurrentDateOnce() {
+                if (cargaHorasDateApplied) return false;
+                const chmes = document.getElementById("chmes");
+                const chdia = document.getElementById("chdia");
+                if (!chmes || !chdia) return false;
+
+                const now = new Date();
+                const mes = MESES[now.getMonth()] || getCurrentMonthName();
+                if ([...chmes.options].some((opt) => opt.value === mes)) {
+                    chmes.value = mes;
+                }
+
+                chGetDiasSemana();
+
+                const day = String(now.getDate());
+                if ([...chdia.options].some((opt) => opt.value === day)) {
+                    chdia.value = day;
+                    chUpdateFecha();
+                }
+
+                cargaHorasDateApplied = true;
+                return true;
             }
             function currentDataEmail() {
                 return dataEmail(
@@ -3987,6 +4256,10 @@
                     .from("bw_meses")
                     .select("email");
                 (meses || []).forEach((m) => add(m.email, "empleado"));
+                const { data: sueldos } = await sb
+                    .from("bw_sueldos")
+                    .select("email");
+                (sueldos || []).forEach((s) => add(s.email, "empleado"));
                 add(DEFAULT_VIEW_EMAIL, "empleado");
                 adminUsers = [...found.values()].sort((a, b) => {
                     if (a.rol === "admin" && b.rol !== "admin") return 1;
@@ -4018,7 +4291,11 @@
                             `<option value="${u.email}">${u.email}${u.rol === "admin" ? " (admin)" : ""}</option>`,
                     )
                     .join("");
-                ["admin-user-select", "admin-user-select-ra"].forEach((id) => {
+                [
+                    "admin-user-select",
+                    "admin-user-select-ra",
+                    "admin-user-select-su",
+                ].forEach((id) => {
                     const sel = document.getElementById(id);
                     if (!sel) return;
                     sel.innerHTML = opts;
@@ -4047,18 +4324,21 @@
                 const prev = viewedEmail;
                 viewedEmail = next;
                 diasDirty = false;
+                resetMonthlySueldoForm();
                 const loaded = await loadCloud();
                 if (!loaded) {
                     if (viewedEmail === next) viewedEmail = prev;
                     renderAdminUserSelect();
                     return;
                 }
+                await loadSueldos(false);
                 renderAdminUserSelect();
                 renderBonos();
                 renderBcfg();
                 onMC(true);
                 calcR();
                 renderAT();
+                renderSueldos();
                 setEditable(isAdm);
                 setCloud(true);
             }
@@ -4247,12 +4527,14 @@
                 };
                 MD = {};
                 BONOS = [];
+                SUELDOS = [];
                 selBonos = {};
                 dolar = null;
                 dolarT = null;
                 viewedEmail = "";
                 adminUsers = [];
                 initialMonthDefaultsApplied = false;
+                cargaHorasDateApplied = false;
                 if (window._poll) {
                     clearInterval(window._poll);
                     window._poll = null;
@@ -4277,10 +4559,12 @@
                 adminUsers = [];
                 MD = {};
                 BONOS = [];
+                SUELDOS = [];
                 selBonos = {};
                 dolar = null;
                 dolarT = null;
                 initialMonthDefaultsApplied = false;
+                cargaHorasDateApplied = false;
                 if (window._poll) {
                     clearInterval(window._poll);
                     window._poll = null;
@@ -4563,6 +4847,470 @@
                 return !legacyError;
             }
 
+            function todayISO() {
+                return new Date().toISOString().slice(0, 10);
+            }
+
+            function finalForMonth(m) {
+                const d = MD[m] || stateFromDefault(m);
+                const { oficina: tO, evento: tE } = getTarifasForMes(m);
+                const { sal } = calcMesAmounts(d, tO, tE);
+                const bonosDia = d.bonosDia || 0;
+                const extra = (sal * porcExtra) / 100;
+                return {
+                    sal,
+                    bonosDia,
+                    extra,
+                    final: sal + bonosDia + extra,
+                };
+            }
+
+            function paidForMonth(m) {
+                return SUELDOS.filter((s) => s.mes === m).reduce(
+                    (sum, s) => sum + (Number(s.monto) || 0),
+                    0,
+                );
+            }
+
+            function normalizeSueldoEstado(value, fallback = "parcial") {
+                return ["parcial", "completo", "falta_pagar"].includes(value)
+                    ? value
+                    : fallback;
+            }
+
+            function manualSueldoEstadoForMonth(m) {
+                const row = SUELDOS.find((s) => s.mes === m);
+                return row ? normalizeSueldoEstado(row.estado) : null;
+            }
+
+            function sueldoMontoPendiente(final, paid, manualEstado = null) {
+                final = Number(final) || 0;
+                paid = Number(paid) || 0;
+                manualEstado = manualEstado
+                    ? normalizeSueldoEstado(manualEstado)
+                    : null;
+                if (manualEstado === "completo") return 0;
+                if (final <= 0) return 0;
+                return Math.max(final - paid, 0);
+            }
+
+            function sueldoEstado(final, paid, manualEstado = null) {
+                final = Number(final) || 0;
+                paid = Number(paid) || 0;
+                manualEstado = manualEstado
+                    ? normalizeSueldoEstado(manualEstado)
+                    : null;
+                if (manualEstado === "completo") {
+                    return {
+                        label: "Completo",
+                        color: "var(--green)",
+                        detail: "Marcado completo manualmente",
+                    };
+                }
+                if (manualEstado === "parcial") {
+                    return {
+                        label: "Parcial",
+                        color: "var(--amber)",
+                        detail:
+                            final > paid
+                                ? "Falta " + fmt(final - paid)
+                                : "Marcado parcial manualmente",
+                    };
+                }
+                if (manualEstado === "falta_pagar") {
+                    return {
+                        label: "Falta pagar",
+                        color: "var(--red)",
+                        detail:
+                            final > paid
+                                ? "Falta " + fmt(final - paid)
+                                : "Marcado falta pagar manualmente",
+                    };
+                }
+                if (final < 0) {
+                    return {
+                        label: "Sin sueldo a pagar",
+                        color: "var(--accent)",
+                        detail: "Saldo negativo: " + fmt(Math.abs(final)),
+                    };
+                }
+                if (final === 0) {
+                    return paid > 0
+                        ? {
+                              label: "Pago registrado",
+                              color: "var(--green)",
+                              detail: "Sin sueldo calculado",
+                          }
+                        : {
+                              label: "Sin sueldo a pagar",
+                              color: "var(--muted)",
+                              detail: "Sin deuda",
+                          };
+                }
+                if (paid >= final) {
+                    return {
+                        label: "Completo",
+                        color: "var(--green)",
+                        detail: paid > final ? "Completo con excedente" : "Pago completo",
+                    };
+                }
+                if (paid > 0) {
+                    return {
+                        label: "Parcial",
+                        color: "var(--amber)",
+                        detail: "Falta " + fmt(final - paid),
+                    };
+                }
+                return {
+                    label: "Falta pagar",
+                    color: "var(--red)",
+                    detail: "Falta " + fmt(final),
+                };
+            }
+
+            function sueldoBadge(status) {
+                return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);color:${status.color};border:1px solid var(--border);border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;">${status.label}</span>`;
+            }
+
+            async function loadSueldos(showErrors = false) {
+                const owner = currentDataEmail();
+                if (!owner || !sb) return false;
+                const { data, error } = await sb
+                    .from("bw_sueldos")
+                    .select("*")
+                    .eq("email", owner)
+                    .order("fecha_pago", { ascending: false })
+                    .order("created_at", { ascending: false });
+                if (error) {
+                    SUELDOS = [];
+                    if (showErrors) {
+                        showAlert(
+                            "er",
+                            "No se pudieron cargar los sueldos. Ejecuta supabase.sql en Supabase.",
+                        );
+                    }
+                    renderAT();
+                    renderSueldos();
+                    renderMonthlySueldos();
+                    if (curTab === "md") calcD();
+                    return false;
+                }
+                SUELDOS = data || [];
+                renderAT();
+                renderSueldos();
+                renderMonthlySueldos();
+                if (curTab === "md") calcD();
+                return true;
+            }
+
+            function renderSueldos() {
+                const mes = document.getElementById("su-mes")?.value || getMesSafe();
+                const fecha = document.getElementById("su-fecha");
+                if (fecha && !fecha.value) fecha.value = todayISO();
+
+                const resumen = document.getElementById("su-resumen");
+                const list = document.getElementById("su-list");
+                if (!resumen && !list) return;
+
+                const final = finalForMonth(mes).final;
+                const paid = paidForMonth(mes);
+                const manualEstado = manualSueldoEstadoForMonth(mes);
+                const pending = sueldoMontoPendiente(final, paid, manualEstado);
+                const overpaid = final > 0 ? Math.max(paid - final, 0) : 0;
+                const rows = SUELDOS.filter((s) => s.mes === mes);
+                const status = sueldoEstado(final, paid, manualEstado);
+
+                if (resumen) {
+                    resumen.innerHTML = `
+                <div class="rrow"><span class="rl">Mes</span><span class="rv">${escHtml(mes)}</span></div>
+                <div class="rrow"><span class="rl">Estado del pago</span><span class="rv">${sueldoBadge(status)}</span></div>
+                <div class="rrow"><span class="rl">Sueldo calculado</span><span class="rv">${fmt(final)}</span></div>
+                <div class="rrow"><span class="rl">Pagado registrado</span><span class="rv" style="color:var(--green);">${fmt(paid)}</span></div>
+                <div class="rrow rtot"><span class="rl">${pending > 0 ? "Pendiente" : "Resultado"}</span><span class="rv" style="color:${status.color};">${pending > 0 ? fmt(pending) : status.detail}</span></div>
+                ${overpaid ? `<div class="rrow"><span class="rl">Pago excedente</span><span class="rv" style="color:var(--accent);">${fmt(overpaid)}</span></div>` : ""}
+              `;
+                }
+
+                if (!list) return;
+                if (!rows.length) {
+                    list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px;">Todavia no hay pagos registrados para ${escHtml(mes)}.</div>`;
+                    return;
+                }
+                list.innerHTML = rows
+                    .map((s, index) => {
+                        const paidUntilRow = rows
+                            .slice(index)
+                            .reduce(
+                                (sum, item) => sum + (Number(item.monto) || 0),
+                                0,
+                            );
+                        const rowStatus = sueldoEstado(
+                            final,
+                            paidUntilRow,
+                            normalizeSueldoEstado(s.estado),
+                        );
+                        return `
+                <div id="sueldo-row-${s.id}" class="anim-row" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:var(--surface);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:13px;font-weight:700;">${fmt(s.monto)}</span>${sueldoBadge(rowStatus)}</div>
+                      <div style="font-size:12px;color:var(--muted);">${escHtml(s.fecha_pago || "")} · ${escHtml(s.metodo || "transferencia")}</div>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                      <button class="bsave bsave-sm" onclick="editSueldo('${s.id}')">Editar</button>
+                      <button class="bsave bsave-sm" style="background:var(--red);border:none;" onclick="deleteSueldo('${s.id}')">Borrar</button>
+                    </div>
+                  </div>
+                  <div style="font-size:12px;color:${rowStatus.color};margin-top:8px;font-weight:700;">${rowStatus.detail}</div>
+                  ${s.nota ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;">${escHtml(s.nota)}</div>` : ""}
+                </div>`;
+                    })
+                    .join("");
+            }
+
+            function getMonthlySueldoMes() {
+                return document.getElementById("smd")?.value || getMesSafe();
+            }
+
+            function renderMonthlySueldos() {
+                const resumen = document.getElementById("md-su-resumen");
+                const list = document.getElementById("md-su-list");
+                if (!resumen && !list) return;
+
+                const mes = getMonthlySueldoMes();
+                const fecha = document.getElementById("md-su-fecha");
+                if (fecha && !fecha.value) fecha.value = todayISO();
+
+                const final = finalForMonth(mes).final;
+                const paid = paidForMonth(mes);
+                const manualEstado = manualSueldoEstadoForMonth(mes);
+                const pending = sueldoMontoPendiente(final, paid, manualEstado);
+                const overpaid = final > 0 ? Math.max(paid - final, 0) : 0;
+                const status = sueldoEstado(final, paid, manualEstado);
+                const rows = SUELDOS.filter((s) => s.mes === mes);
+
+                if (resumen) {
+                    resumen.innerHTML = `
+                <div class="rrow"><span class="rl">Estado</span><span class="rv">${sueldoBadge(status)}</span></div>
+                <div class="rrow"><span class="rl">Sueldo calculado</span><span class="rv">${fmt(final)}</span></div>
+                <div class="rrow"><span class="rl">Pagado</span><span class="rv" style="color:var(--green);">${fmt(paid)}</span></div>
+                <div class="rrow"><span class="rl">${pending > 0 ? "Falta pagar" : "Resultado"}</span><span class="rv" style="color:${status.color};">${pending > 0 ? fmt(pending) : status.detail}</span></div>
+                ${overpaid ? `<div class="rrow"><span class="rl">Pago excedente</span><span class="rv" style="color:var(--accent);">${fmt(overpaid)}</span></div>` : ""}
+              `;
+                }
+
+                if (!list) return;
+                if (!rows.length) {
+                    list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:18px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--surface);">No hay pagos de sueldo registrados para ${escHtml(mes)}.</div>`;
+                    return;
+                }
+                list.innerHTML = rows
+                    .map(
+                        (s) => `
+                <div id="md-sueldo-row-${s.id}" class="anim-row" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:var(--surface);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:13px;font-weight:800;">${fmt(s.monto)}</span>${sueldoBadge(sueldoEstado(final, Number(s.monto) || 0, normalizeSueldoEstado(s.estado)))}</div>
+                      <div style="font-size:12px;color:var(--muted);">${escHtml(s.fecha_pago || "")} · ${escHtml(s.metodo || "transferencia")}</div>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                      <button class="bsave bsave-sm" onclick="editMonthlySueldo('${s.id}')">Editar</button>
+                      <button class="bsave bsave-sm" style="background:var(--red);border:none;" onclick="deleteSueldo('${s.id}')">Borrar</button>
+                    </div>
+                  </div>
+                  ${s.nota ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;">${escHtml(s.nota)}</div>` : ""}
+                </div>`,
+                    )
+                    .join("");
+            }
+
+            function resetMonthlySueldoForm() {
+                const id = document.getElementById("md-su-id");
+                const fecha = document.getElementById("md-su-fecha");
+                const monto = document.getElementById("md-su-monto");
+                const metodo = document.getElementById("md-su-metodo");
+                const estado = document.getElementById("md-su-estado");
+                const nota = document.getElementById("md-su-nota");
+                const save = document.getElementById("md-su-save");
+                const cancel = document.getElementById("md-su-cancel");
+                if (id) id.value = "";
+                if (fecha) fecha.value = todayISO();
+                if (monto) monto.value = "";
+                if (metodo) metodo.value = "transferencia";
+                if (estado) estado.value = "parcial";
+                if (nota) nota.value = "";
+                if (save) save.textContent = "Guardar pago";
+                if (cancel) cancel.style.display = "none";
+            }
+
+            function editMonthlySueldo(id) {
+                const row = SUELDOS.find((s) => s.id === id);
+                if (!row) return;
+                document.getElementById("md-su-id").value = row.id;
+                document.getElementById("md-su-fecha").value =
+                    row.fecha_pago || todayISO();
+                document.getElementById("md-su-monto").value =
+                    Number(row.monto) || "";
+                document.getElementById("md-su-metodo").value =
+                    row.metodo || "transferencia";
+                document.getElementById("md-su-estado").value =
+                    normalizeSueldoEstado(row.estado);
+                document.getElementById("md-su-nota").value = row.nota || "";
+                document.getElementById("md-su-save").textContent =
+                    "Actualizar pago";
+                document.getElementById("md-su-cancel").style.display = "";
+                document.getElementById("md-su-monto").focus();
+            }
+
+            async function saveMonthlySueldo() {
+                const id = document.getElementById("md-su-id")?.value || "";
+                const mes = getMonthlySueldoMes();
+                const fecha =
+                    document.getElementById("md-su-fecha")?.value || todayISO();
+                const monto =
+                    Number(document.getElementById("md-su-monto")?.value) || 0;
+                const metodo =
+                    document.getElementById("md-su-metodo")?.value ||
+                    "transferencia";
+                const estado = normalizeSueldoEstado(
+                    document.getElementById("md-su-estado")?.value,
+                );
+                const nota =
+                    document.getElementById("md-su-nota")?.value.trim() || "";
+                const owner = currentDataEmail();
+
+                if (!monto || monto <= 0) {
+                    showAlert("er", "Ingresa un monto de sueldo valido.");
+                    return;
+                }
+
+                const payload = {
+                    email: owner,
+                    mes,
+                    fecha_pago: fecha,
+                    monto,
+                    metodo,
+                    estado,
+                    nota,
+                    created_by: cu?.email || owner,
+                };
+                const q = id
+                    ? sb.from("bw_sueldos").update(payload).eq("id", id)
+                    : sb.from("bw_sueldos").insert(payload);
+                const { error } = await q;
+                if (error) {
+                    showAlert(
+                        "er",
+                        "No se pudo guardar el sueldo. Ejecuta supabase.sql y revisa permisos.",
+                    );
+                    return;
+                }
+                resetMonthlySueldoForm();
+                showSaved("md-su-saved");
+                await loadSueldos(false);
+                showAlert("ok", id ? "Pago actualizado." : "Pago guardado.");
+            }
+
+            async function saveSueldo() {
+                const id = document.getElementById("su-id")?.value || "";
+                const mes = document.getElementById("su-mes")?.value || getMesSafe();
+                const fecha = document.getElementById("su-fecha")?.value || todayISO();
+                const monto = Number(document.getElementById("su-monto")?.value) || 0;
+                const metodo =
+                    document.getElementById("su-metodo")?.value ||
+                    "transferencia";
+                const estado = normalizeSueldoEstado(
+                    document.getElementById("su-estado")?.value,
+                );
+                const nota = document.getElementById("su-nota")?.value.trim() || "";
+                const owner = currentDataEmail();
+
+                if (!monto || monto <= 0) {
+                    showAlert("er", "Ingresa un monto de sueldo valido.");
+                    return;
+                }
+
+                const payload = {
+                    email: owner,
+                    mes,
+                    fecha_pago: fecha,
+                    monto,
+                    metodo,
+                    estado,
+                    nota,
+                    created_by: cu?.email || owner,
+                };
+                const q = id
+                    ? sb.from("bw_sueldos").update(payload).eq("id", id)
+                    : sb.from("bw_sueldos").insert(payload);
+                const { error } = await q;
+                if (error) {
+                    showAlert(
+                        "er",
+                        "No se pudo guardar el sueldo. Ejecuta supabase.sql y revisa permisos.",
+                    );
+                    return;
+                }
+                resetSueldoForm();
+                showSaved("svsu");
+                await loadSueldos(false);
+                showAlert("ok", id ? "Pago de sueldo actualizado." : "Pago de sueldo guardado.");
+            }
+
+            function resetSueldoForm() {
+                const id = document.getElementById("su-id");
+                const fecha = document.getElementById("su-fecha");
+                const monto = document.getElementById("su-monto");
+                const metodo = document.getElementById("su-metodo");
+                const estado = document.getElementById("su-estado");
+                const nota = document.getElementById("su-nota");
+                const save = document.getElementById("su-save");
+                const cancel = document.getElementById("su-cancel");
+                if (id) id.value = "";
+                if (fecha) fecha.value = todayISO();
+                if (monto) monto.value = "";
+                if (metodo) metodo.value = "transferencia";
+                if (estado) estado.value = "parcial";
+                if (nota) nota.value = "";
+                if (save) save.textContent = "Guardar pago de sueldo";
+                if (cancel) cancel.style.display = "none";
+            }
+
+            function editSueldo(id) {
+                const row = SUELDOS.find((s) => s.id === id);
+                if (!row) return;
+                document.getElementById("su-id").value = row.id;
+                document.getElementById("su-mes").value = row.mes || getMesSafe();
+                document.getElementById("su-fecha").value =
+                    row.fecha_pago || todayISO();
+                document.getElementById("su-monto").value =
+                    Number(row.monto) || "";
+                document.getElementById("su-metodo").value =
+                    row.metodo || "transferencia";
+                document.getElementById("su-estado").value =
+                    normalizeSueldoEstado(row.estado);
+                document.getElementById("su-nota").value = row.nota || "";
+                document.getElementById("su-save").textContent =
+                    "Actualizar pago de sueldo";
+                document.getElementById("su-cancel").style.display = "";
+                renderSueldos();
+                document.getElementById("su-monto").focus();
+            }
+
+            async function deleteSueldo(id) {
+                if (!id) return;
+                const row = document.getElementById("sueldo-row-" + id);
+                if (row) row.classList.add("sol-row-deleting");
+                await new Promise((resolve) => setTimeout(resolve, row ? 260 : 0));
+                const { error } = await sb.from("bw_sueldos").delete().eq("id", id);
+                if (error) {
+                    showAlert("er", "No se pudo borrar el pago.");
+                    return;
+                }
+                await loadSueldos(false);
+                showAlert("ok", "Pago borrado.");
+            }
+
             function setCloud(ok) {
                 document.getElementById("cdot").className =
                     "dot " + (ok ? "dg" : "dr");
@@ -4578,6 +5326,7 @@
                     await loadTarifas();
                     await loadPorcExtraFromDB();
                     const loaded = await loadCloud();
+                    await loadSueldos(false);
                     if (!loaded) {
                         ldmsg("No se pudo cargar la nube");
                         showAlert(
@@ -4616,8 +5365,16 @@
                             if (curTab === "md" && r.mes === curMes) return;
                             applyMesFromServer(r, false);
                         });
+                        const { data: sueldoRows } = await sb
+                            .from("bw_sueldos")
+                            .select("*")
+                            .eq("email", currentDataEmail())
+                            .order("fecha_pago", { ascending: false })
+                            .order("created_at", { ascending: false });
+                        if (sueldoRows) SUELDOS = sueldoRows;
                         calcR();
                         renderAT();
+                        if (curTab === "su") renderSueldos();
                         if (curTab === "md") {
                             refreshMdTotalsOnly();
                         }
@@ -4798,7 +5555,7 @@
 
             async function showTab(id) {
                 curTab = id;
-                ["ra", "md", "ch", "cfg"].forEach((t) => {
+                ["ra", "md", "ch", "su", "cfg"].forEach((t) => {
                     const el = document.getElementById("tab-" + t);
                     if (!el) return;
                     if (t === id) {
@@ -4808,21 +5565,34 @@
                         el.classList.add("tab-content");
                     } else el.style.display = "none";
                 });
-                ["ra", "md", "ch", "cfg"].forEach((t) => {
+                ["ra", "md", "ch", "su", "cfg"].forEach((t) => {
                     const el = document.getElementById("tab-btn-" + t);
-                    if (el) el.className = "tab" + (t === id ? " on" : "");
+                    if (el) {
+                        const adm = t === "md" || t === "cfg" ? " adm" : "";
+                        el.className = "tab" + adm + (t === id ? " on" : "");
+                    }
                 });
                 if (id === "md") {
                     onMC(true);
                     calcD();
+                    renderMonthlySueldos();
                 }
                 if (id === "ra") {
                     calcR();
                     renderAT();
                 }
                 if (id === "ch") {
-                    chGetDiasSemana();
+                    if (!applyCargaHorasCurrentDateOnce()) chGetDiasSemana();
                     loadMisSolicitudes();
+                }
+                if (id === "su") {
+                    const sel = document.getElementById("su-mes");
+                    const source =
+                        document.getElementById("smr")?.value ||
+                        document.getElementById("smd")?.value;
+                    if (sel && source) sel.value = source;
+                    loadSueldos(false);
+                    renderSueldos();
                 }
             }
 
@@ -5054,6 +5824,7 @@
                 recalcTotalesFromDias(m);
                 updateTotalesPlanillaLock(m);
                 calcD();
+                renderMonthlySueldos();
                 renderBonos();
                 setEditable(isAdm);
                 diasDirty = false;
@@ -5545,6 +6316,7 @@
                         bonosDia,
                         bonExtra,
                     );
+                if (curTab === "md") renderMonthlySueldos();
             }
             function buildR(
                 m,
@@ -5561,6 +6333,14 @@
                 extra,
             ) {
                 const gas = d.gastos || 0;
+                const sueldoPagado = paidForMonth(m);
+                const sueldoManual = manualSueldoEstadoForMonth(m);
+                const sueldoPendiente = sueldoMontoPendiente(
+                    fin,
+                    sueldoPagado,
+                    sueldoManual,
+                );
+                const sueldoStatus = sueldoEstado(fin, sueldoPagado, sueldoManual);
                 return `<div class="rrow"><span class="rl">Mes</span><span class="rv">${m}</span></div>
                 <div class="rrow"><span class="rl">Hrs Oficina — ${d.hrsOficina} h × ${fmt(tO)}</span><span class="rv">${fmt(cO)}</span></div>
                 <div class="rrow"><span class="rl">Hrs Evento — ${d.hrsEvento} h × ${fmt(tE)}</span><span class="rv">${fmt(cE)}</span></div>
@@ -5571,18 +6351,24 @@
                 ${bonosDia ? `<div class="rrow rbon"><span class="rl">+ Bonos (por día)</span><span class="rv">+ ${fmt(bonosDia)}</span></div>` : ""}
                 ${extra ? `<div class="rrow rbon"><span class="rl">+ ${porcExtra}% Extra sobre saldo</span><span class="rv">+ ${fmt(extra)}</span></div>` : ""}
                 <div class="rrow rtot"><span class="rl">TOTAL FINAL</span><span class="rv">${fmt(fin)}${usd}</span></div>
+                <div class="rrow"><span class="rl">Estado del sueldo</span><span class="rv">${sueldoBadge(sueldoStatus)}</span></div>
+                <div class="rrow"><span class="rl">Sueldo pagado</span><span class="rv" style="color:var(--green);">${fmt(sueldoPagado)}</span></div>
+                <div class="rrow"><span class="rl">Pendiente de sueldo</span><span class="rv" style="color:${sueldoStatus.color};">${sueldoPendiente > 0 ? fmt(sueldoPendiente) : sueldoStatus.detail}</span></div>
                 ${dolar ? `<div class="rrow"><span class="rl" style="font-size:11px;">Dólar blue: ${fmt(dolar)}</span><span class="rv" style="font-size:11px;color:var(--muted);">${dolarT ? dolarT.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : ""}</span></div>` : ""}`;
             }
 
             renderAT = function () {
-                let h = `<thead><tr><th>Mes</th><th class="num">Hrs Of.</th><th class="num">Hrs Ev.</th><th class="num">Total cobrar</th><th class="num">Bonos</th><th class="num">Gastos</th><th class="num">Adelantos</th><th class="num">Saldo</th>${dolar ? '<th class="num">USD</th>' : ""}</tr></thead><tbody>`;
+                let h = `<thead><tr><th>Mes</th><th class="num">Hrs Of.</th><th class="num">Hrs Ev.</th><th class="num">Total cobrar</th><th class="num">Bonos</th><th class="num">Gastos</th><th class="num">Adelantos</th><th class="num">Saldo</th><th class="num">Sueldo final</th><th class="num">Estado</th><th class="num">Pagado</th><th class="num">Pendiente</th>${dolar ? '<th class="num">USD</th>' : ""}</tr></thead><tbody>`;
                 let sO = 0,
                     sE = 0,
                     sC = 0,
                     sB = 0,
                     sG = 0,
                     sA = 0,
-                    sS = 0;
+                    sS = 0,
+                    sF = 0,
+                    sP = 0,
+                    sPend = 0;
                 MESES.forEach((m) => {
                     const d = MD[m] || {
                         hrsOficina: 0,
@@ -5600,8 +6386,22 @@
                     sG += gas;
                     sA += adel;
                     sS += sal;
+                    const extraMes = (sal * porcExtra) / 100;
+                    const finalMes = sal + bonosDia + extraMes;
+                    const pagadoMes = paidForMonth(m);
+                    const manualMes = manualSueldoEstadoForMonth(m);
+                    const pendienteMes = sueldoMontoPendiente(
+                        finalMes,
+                        pagadoMes,
+                        manualMes,
+                    );
+                    const estadoMes = sueldoEstado(finalMes, pagadoMes, manualMes);
+                    const hasSueldoMes = finalMes !== 0 || pagadoMes > 0;
+                    sF += finalMes;
+                    sP += pagadoMes;
+                    sPend += pendienteMes;
                     const u = dolar
-                        ? `<td class="num" style="color:var(--muted);font-size:11px;">${sal ? fmtU(sal / dolar) : "—"}</td>`
+                        ? `<td class="num" style="color:var(--muted);font-size:11px;">${finalMes ? fmtU(finalMes / dolar) : "—"}</td>`
                         : "";
                     h += `<tr><td><span class="mlink" onclick="goMes('${m}')">${m}</span></td>
                   <td class="num">${d.hrsOficina || "—"}</td><td class="num">${d.hrsEvento || "—"}</td>
@@ -5609,17 +6409,21 @@
                   <td class="num">${bonosDia ? `<span style="color:var(--green);">${fmt(bonosDia)}</span>` : "—"}</td>
                   <td class="num">${gas ? `<span style="color:var(--amber);">${fmt(gas)}</span>` : "—"}</td>
                   <td class="num">${adel ? `<span style="color:var(--red);">${fmt(adel)}</span>` : "—"}</td>
-                  <td class="num"><strong>${sal ? fmt(sal) : "—"}</strong></td>${u}</tr>`;
+                  <td class="num"><strong>${sal ? fmt(sal) : "—"}</strong></td>
+                  <td class="num"><strong>${finalMes ? fmt(finalMes) : "—"}</strong></td>
+                  <td class="num">${hasSueldoMes ? sueldoBadge(estadoMes) : "—"}</td>
+                  <td class="num" style="color:var(--green);">${pagadoMes ? fmt(pagadoMes) : "—"}</td>
+                  <td class="num" style="color:${estadoMes.color};">${hasSueldoMes ? (pendienteMes > 0 ? fmt(pendienteMes) : estadoMes.label) : "—"}</td>${u}</tr>`;
                 });
                 const bonExtraY = (sS * porcExtra) / 100;
                 const finY = sS + sB + bonExtraY;
                 h += `</tbody><tfoot><tr style="background:var(--surface2);font-weight:600;">
                 <td>TOTAL</td><td class="num">${sO}</td><td class="num">${sE}</td>
                 <td class="num">${fmt(sC)}</td><td class="num" style="color:var(--green);">${fmt(sB)}</td><td class="num" style="color:var(--amber);">${fmt(sG)}</td><td class="num" style="color:var(--red);">${fmt(sA)}</td>
-                <td class="num">${fmt(sS)}</td>${dolar ? `<td class="num" style="font-size:11px;">${fmtU(sS / dolar)}</td>` : ""}
+                <td class="num">${fmt(sS)}</td><td class="num">${fmt(sF)}</td><td class="num"></td><td class="num" style="color:var(--green);">${fmt(sP)}</td><td class="num" style="color:var(--amber);">${fmt(sPend)}</td>${dolar ? `<td class="num" style="font-size:11px;">${fmtU(sF / dolar)}</td>` : ""}
               </tr><tr style="background:var(--surface);font-weight:600;">
-                <td></td><td colspan="6" style="text-align:right;color:var(--muted);">+ ${porcExtra}% Extra: <strong style="color:var(--green);">${fmt(bonExtraY)}</strong></td>
-                <td style="font-size:16px;color:var(--accent);">${fmt(finY)}</td>${dolar ? `<td style="font-size:12px;color:var(--muted);">${fmtU(finY / dolar)}</td>` : ""}
+                <td></td><td colspan="7" style="text-align:right;color:var(--muted);">+ ${porcExtra}% Extra: <strong style="color:var(--green);">${fmt(bonExtraY)}</strong></td>
+                <td style="font-size:16px;color:var(--accent);">${fmt(finY)}</td><td></td><td style="color:var(--green);">${fmt(sP)}</td><td style="color:var(--amber);">${fmt(sPend)}</td>${dolar ? `<td style="font-size:12px;color:var(--muted);">${fmtU(finY / dolar)}</td>` : ""}
               </tr></tfoot>`;
                 document.getElementById("at").innerHTML = h;
             };
@@ -5714,6 +6518,9 @@
                         "TOTAL BONOS ($)",
                         "EXTRA ($)",
                         "TOTAL FINAL ($)",
+                        "ESTADO SUELDO",
+                        "SUELDO PAGADO ($)",
+                        "PENDIENTE ($)",
                         ...(dolar ? ["USD"] : []),
                     ],
                 ];
@@ -5735,6 +6542,11 @@
                     } = calcMesAmounts(xd, xTarifaOficina, xTarifaEvento);
                     const xb = xd.bonosDia || 0;
                     const xe = x === m ? extra : (xs * porcExtra) / 100;
+                    const xf = xs + xb + xe;
+                    const xp = paidForMonth(x);
+                    const xManual = manualSueldoEstadoForMonth(x);
+                    const xEstado = sueldoEstado(xf, xp, xManual);
+                    const xpend = sueldoMontoPendiente(xf, xp, xManual);
                     const row = [
                         x,
                         xd.hrsOficina,
@@ -5753,9 +6565,12 @@
                             : "Sin bono",
                         xb,
                         xe,
-                        xs + xb + xe,
+                        xf,
+                        xEstado.label,
+                        xp,
+                        xpend,
                     ];
-                    if (dolar) row.push(+((xs + xb + xe) / dolar).toFixed(2));
+                    if (dolar) row.push(+(xf / dolar).toFixed(2));
                     rr.push(row);
                 });
                 XLSX.utils.book_append_sheet(
@@ -5836,6 +6651,20 @@
                         "",
                         "+ " + fmt(extra),
                     ],
+                    [],
+                    ["PAGOS DE SUELDO"],
+                    ["Fecha", "Monto", "Metodo", "Estado", "Nota"],
+                    ...SUELDOS.filter((s) => s.mes === m).map((s) => [
+                        s.fecha_pago,
+                        s.monto,
+                        s.metodo,
+                        sueldoEstado(
+                            fin,
+                            Number(s.monto) || 0,
+                            normalizeSueldoEstado(s.estado),
+                        ).label,
+                        s.nota || "",
+                    ]),
                     [],
                     ["💰 TOTAL FINAL", "", "", "", "", "", "", "", fin],
                     ...(dolar
@@ -6004,7 +6833,7 @@
                     showAlertCH(
                         "er",
                         needSql
-                            ? "❌ En Supabase → SQL Editor ejecutá <strong>migrate_horas.sql</strong> (agrega columnas hora_inicio y hora_fin)."
+                            ? "❌ En Supabase → SQL Editor ejecutá <strong>supabase.sql</strong> completo."
                             : "❌ Error al enviar: " + msg,
                     );
                 } else {
@@ -6295,6 +7124,7 @@
                     viewedEmail = "";
                     adminUsers = [];
                     initialMonthDefaultsApplied = false;
+                    cargaHorasDateApplied = false;
                     if (window._poll) {
                         clearInterval(window._poll);
                         window._poll = null;
