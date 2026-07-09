@@ -2198,6 +2198,22 @@
                     .trim()
                     .toLowerCase();
             }
+            function leerBonoSolicitud(solicitud) {
+                const raw = String(solicitud?.det_gastos || "");
+                let explicito = false;
+                let bonoId = null;
+                const detalle = raw
+                    .replace(
+                        /(?:\r?\n)?\[\[BRADEM_BONO:(\d+)\]\]/g,
+                        (_, id) => {
+                            explicito = true;
+                            bonoId = Number(id) || null;
+                            return "";
+                        },
+                    )
+                    .trim();
+                return { explicito, bonoId, detalle };
+            }
             function emptyMesState() {
                 return {
                     dias: [],
@@ -2442,7 +2458,8 @@
       <div class="sol-body">
         <div class="sol-field"><div class="lbl">Lugar / Descripción</div><div class="val">${s.descripcion || "—"}</div></div>
         <div class="sol-field"><div class="lbl">Horario (24 h)</div><div class="val" style="font-family:var(--mono);">${rangoHora24(s.hora_inicio, s.hora_fin) || "—"}</div></div>
-        <div class="sol-field"><div class="lbl">Gastos</div><div class="val">${fmt(s.gastos)}${s.det_gastos ? `<br><span style="font-size:11px;color:var(--muted);">${s.det_gastos}</span>` : ""}</div></div>
+        <div class="sol-field"><div class="lbl">Bono</div><div class="val">${leerBonoSolicitud(s).bonoId ? `Bono ${leerBonoSolicitud(s).bonoId}` : "—"}</div></div>
+        <div class="sol-field"><div class="lbl">Gastos</div><div class="val">${fmt(s.gastos)}${leerBonoSolicitud(s).detalle ? `<br><span style="font-size:11px;color:var(--muted);">${leerBonoSolicitud(s).detalle}</span>` : ""}</div></div>
         <div class="sol-field"><div class="lbl">Adelanto</div><div class="val">${fmt(s.adelanto)}</div></div>
         <div class="sol-field"><div class="lbl">Enviado</div><div class="val" style="font-size:12px;">${new Date(s.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div></div>
       </div>
@@ -2476,6 +2493,7 @@
                     return;
                 }
                 let diasActuales = state.dias;
+                const bonoSolicitud = leerBonoSolicitud(s);
                 // 2. Merge this day into dias
                 const existing = diasActuales.findIndex(
                     (d) => d.fecha === s.fecha,
@@ -2489,8 +2507,9 @@
                     horas: parseFloat(s.horas) || 0,
                     desc: s.descripcion || "",
                     gastos: parseFloat(s.gastos) || 0,
-                    detGastos: s.det_gastos || "",
+                    detGastos: bonoSolicitud.detalle,
                     adelanto: parseFloat(s.adelanto) || 0,
+                    bono: bonoSolicitud.bonoId || "",
                 };
                 if (existing >= 0) diasActuales[existing] = newDay;
                 else diasActuales.push(newDay);

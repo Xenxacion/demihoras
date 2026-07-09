@@ -58,6 +58,21 @@
             html {
                 color-scheme: dark;
             }
+            select {
+                color-scheme: dark;
+            }
+            select option,
+            select optgroup {
+                background-color: #0f172a;
+                color: #f3f4f6;
+            }
+            select option:checked {
+                background-color: #2563eb;
+                color: #ffffff;
+            }
+            select option:disabled {
+                color: #94a3b8;
+            }
             body {
                 font-family: var(--sans);
                 color: var(--text);
@@ -2683,6 +2698,344 @@
                 max-width: 100%;
                 overflow-x: hidden;
             }
+
+            /* Vista móvil: formularios y tablas sin desplazamiento horizontal */
+            @media (max-width: 720px) {
+                .wrap {
+                    width: 100%;
+                    padding: 12px 8px 48px;
+                }
+
+                .topbar {
+                    padding: 9px 10px;
+                }
+
+                .topbar-r {
+                    align-items: center;
+                }
+
+                .cloud-st,
+                .tuser,
+                .tbtn {
+                    font-size: 10px;
+                }
+
+                .tabs {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 4px;
+                    padding: 6px 8px;
+                    overflow: visible !important;
+                }
+
+                .tab {
+                    min-width: 0;
+                    margin: 0;
+                    padding: 10px 6px;
+                    text-align: center;
+                    white-space: normal;
+                    line-height: 1.2;
+                    font-size: 11px;
+                }
+
+                .tab.on::after {
+                    left: 8px;
+                    right: 8px;
+                }
+
+                .dcard {
+                    align-items: stretch;
+                    gap: 12px;
+                    padding: 16px;
+                }
+
+                .dbadge,
+                .dmeta {
+                    width: 100%;
+                    min-width: 0;
+                }
+
+                .dsep {
+                    width: 100%;
+                    height: 1px;
+                }
+
+                .dcard .bref {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .decard,
+                .rcard,
+                .dcard {
+                    margin-bottom: 12px;
+                }
+
+                .dehead,
+                .rhead {
+                    padding: 11px 12px;
+                }
+
+                .debody,
+                #tab-md .debody {
+                    padding: 12px 10px !important;
+                }
+
+                .degrid {
+                    grid-template-columns: minmax(0, 1fr) !important;
+                    gap: 12px !important;
+                }
+
+                .degrid > * {
+                    grid-column: 1 !important;
+                    min-width: 0;
+                }
+
+                .def input,
+                .def select,
+                .tbox input,
+                .tbox select {
+                    min-width: 0;
+                    font-size: 16px;
+                }
+
+                #chtbody,
+                #su-list {
+                    max-height: none;
+                    overflow: visible;
+                    padding-right: 0;
+                }
+
+                /* Detalle mensual: cada día pasa a ser una tarjeta editable. */
+                #tab-md .dtw {
+                    width: 100%;
+                    overflow: visible;
+                    margin-top: 4px;
+                }
+
+                #tab-md .dt,
+                #tab-md .dt tbody {
+                    display: block;
+                    width: 100%;
+                }
+
+                #tab-md .dt thead {
+                    display: none;
+                }
+
+                #tab-md .dt tbody {
+                    display: grid;
+                    gap: 10px;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    grid-template-areas:
+                        "fecha fecha"
+                        "tipo tipo"
+                        "inicio fin"
+                        "horas gastos"
+                        "descripcion descripcion"
+                        "detalle detalle"
+                        "adelanto bono"
+                        "cobrar cobrar";
+                    gap: 10px;
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid var(--border);
+                    border-radius: 9px;
+                    background-color: rgba(15, 23, 42, 0.88);
+                    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5px;
+                    width: auto !important;
+                    min-width: 0;
+                    padding: 0 !important;
+                    overflow: visible;
+                    border: 0 !important;
+                    background: transparent !important;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td::before {
+                    content: attr(data-label);
+                    display: block;
+                    color: #cbd5e1;
+                    font-family: var(--mono);
+                    font-size: 9px;
+                    font-weight: 700;
+                    line-height: 1.2;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(1) {
+                    grid-area: fecha;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(2) {
+                    grid-area: tipo;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(3) {
+                    grid-area: inicio;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(4) {
+                    grid-area: fin;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(5) {
+                    grid-area: horas;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(6) {
+                    grid-area: descripcion;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(7) {
+                    grid-area: gastos;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(8) {
+                    grid-area: detalle;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(9) {
+                    grid-area: adelanto;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(10) {
+                    grid-area: bono;
+                }
+
+                #tab-md .dt tbody tr:not(.feriado-note) > td:nth-child(11) {
+                    grid-area: cobrar;
+                }
+
+                #tab-md .dt .c-fd,
+                #tab-md .dt .c-cob {
+                    flex-direction: row !important;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding-bottom: 8px !important;
+                    border-bottom: 1px solid var(--border) !important;
+                }
+
+                #tab-md .dt .c-cob {
+                    padding: 9px 0 0 !important;
+                    border-top: 1px solid var(--border) !important;
+                    border-bottom: 0 !important;
+                    text-align: right;
+                    font-size: 13px;
+                }
+
+                #tab-md .dt td input,
+                #tab-md .dt td select {
+                    width: 100%;
+                    min-height: 42px;
+                    padding: 9px 10px !important;
+                    border-radius: 6px;
+                    font-size: 16px !important;
+                }
+
+                #tab-md .dt .inp-24h,
+                #tab-md .dt .inp-24h::placeholder {
+                    font-size: 15px !important;
+                }
+
+                #tab-md .dt .feriado-note {
+                    display: block;
+                    width: 100%;
+                    padding: 9px 11px;
+                    border: 1px solid rgba(168, 85, 247, 0.26);
+                    border-radius: 8px;
+                }
+
+                #tab-md .dt .feriado-note td {
+                    display: block;
+                    width: 100%;
+                    padding: 0 !important;
+                    border: 0 !important;
+                    background: transparent !important;
+                }
+
+                /* Resumen anual: meses legibles como tarjetas. */
+                .atable,
+                .atable tbody,
+                .atable tfoot {
+                    display: block;
+                    width: 100%;
+                }
+
+                .atable thead {
+                    display: none;
+                }
+
+                .atable tbody,
+                .atable tfoot {
+                    display: grid;
+                    gap: 10px;
+                    padding: 10px;
+                }
+
+                .atable tr {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 4px;
+                    padding: 10px;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    background: rgba(15, 23, 42, 0.82);
+                }
+
+                .atable td {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 3px;
+                    min-width: 0;
+                    padding: 6px !important;
+                    border: 0 !important;
+                    text-align: left !important;
+                    overflow-wrap: anywhere;
+                }
+
+                .atable td::before {
+                    color: var(--muted);
+                    font-family: var(--mono);
+                    font-size: 8px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                }
+
+                .atable td:nth-child(1) {
+                    grid-column: 1 / -1;
+                    font-size: 14px;
+                }
+
+                .atable td:nth-child(1)::before { content: "Mes"; }
+                .atable td:nth-child(2)::before { content: "Hrs. oficina"; }
+                .atable td:nth-child(3)::before { content: "Hrs. evento"; }
+                .atable td:nth-child(4)::before { content: "Total cobrar"; }
+                .atable td:nth-child(5)::before { content: "Bonos"; }
+                .atable td:nth-child(6)::before { content: "Gastos"; }
+                .atable td:nth-child(7)::before { content: "Adelantos"; }
+                .atable td:nth-child(8)::before { content: "Saldo"; }
+                .atable td:nth-child(9)::before { content: "Sueldo final"; }
+                .atable td:nth-child(10)::before { content: "Estado"; }
+                .atable td:nth-child(11)::before { content: "Pagado"; }
+                .atable td:nth-child(12)::before { content: "Pendiente"; }
+                .atable td:nth-child(13)::before { content: "USD"; }
+
+                .atable tfoot tr:nth-child(2) {
+                    display: none;
+                }
+            }
         </style>
     </head>
     <body>
@@ -2771,7 +3124,12 @@
                 <div class="tab" onclick="showTab('ch')" id="tab-btn-ch">
                     📤 Cargar Horas
                 </div>
-                <div class="tab" onclick="showTab('su')" id="tab-btn-su">
+                <div
+                    class="tab adm"
+                    onclick="showTab('su')"
+                    id="tab-btn-su"
+                    style="display: none"
+                >
                     Sueldos
                 </div>
                 <div
@@ -3208,6 +3566,7 @@
                                         min="0"
                                         step="100"
                                         placeholder="0"
+                                        oninput="syncSueldoFormEstado('md')"
                                     />
                                 </div>
                                 <div class="def">
@@ -3220,8 +3579,12 @@
                                     </select>
                                 </div>
                                 <div class="def">
-                                    <label>Estado del sueldo</label>
-                                    <select id="md-su-estado">
+                                    <label>Estado calculado</label>
+                                    <select
+                                        id="md-su-estado"
+                                        disabled
+                                        title="Se calcula automaticamente segun el sueldo y los pagos registrados"
+                                    >
                                         <option value="parcial">Parcial</option>
                                         <option value="completo">Completo</option>
                                         <option value="falta_pagar">Falta pagar</option>
@@ -3406,6 +3769,37 @@
                                         <option value="Oficina">Oficina</option>
                                         <option value="Evento">Evento</option>
                                     </select>
+                                </div>
+                                <div class="def">
+                                    <label>Bono del día</label>
+                                    <select
+                                        id="chbono"
+                                        onchange="onCargaHorasBonoChange()"
+                                        style="
+                                            width: 100%;
+                                            border: 1px solid var(--border);
+                                            border-radius: 6px;
+                                            padding: 9px 11px;
+                                            font-size: 14px;
+                                            font-weight: 500;
+                                            color: var(--text);
+                                            background: var(--surface2);
+                                            outline: none;
+                                            font-family: var(--sans);
+                                        "
+                                    >
+                                        <option value="">Sin bono</option>
+                                    </select>
+                                    <div
+                                        id="chbono-hint"
+                                        style="
+                                            margin-top: 5px;
+                                            color: var(--muted);
+                                            font-size: 11px;
+                                        "
+                                    >
+                                        En domingos se aplica automáticamente y podés cambiarlo.
+                                    </div>
                                 </div>
                                 <div class="def">
                                     <label class="lbl-24h">Hora inicio</label>
@@ -3708,7 +4102,10 @@
                         </div>
                         <div class="tbox" style="max-width: 220px">
                             <label>Mes del sueldo</label>
-                            <select id="su-mes" onchange="renderSueldos()">
+                            <select
+                                id="su-mes"
+                                onchange="resetSueldoForm(); renderSueldos(); syncSueldoFormEstado('su')"
+                            >
                                 <option>Enero</option>
                                 <option>Febrero</option>
                                 <option>Marzo</option>
@@ -3745,6 +4142,7 @@
                                         min="0"
                                         step="100"
                                         placeholder="0"
+                                        oninput="syncSueldoFormEstado('su')"
                                     />
                                 </div>
                                 <div class="def">
@@ -3757,8 +4155,12 @@
                                     </select>
                                 </div>
                                 <div class="def">
-                                    <label>Estado del sueldo</label>
-                                    <select id="su-estado">
+                                    <label>Estado calculado</label>
+                                    <select
+                                        id="su-estado"
+                                        disabled
+                                        title="Se calcula automaticamente segun el sueldo y los pagos registrados"
+                                    >
                                         <option value="parcial">Parcial</option>
                                         <option value="completo">Completo</option>
                                         <option value="falta_pagar">Falta pagar</option>
@@ -3882,6 +4284,18 @@
             let cloudLoadSeq = 0,
                 tarifaOficina = 7000,
                 tarifaEvento = 7000;
+            let solicitudesLoadSeq = 0,
+                solicitudesRenderKey = "";
+            const cargaHorasBonoOverrides = new Map();
+            const stableHtmlKeys = new WeakMap();
+
+            function setStableHtml(element, key, html) {
+                if (!element || stableHtmlKeys.get(element) === key)
+                    return false;
+                element.innerHTML = html;
+                stableHtmlKeys.set(element, key);
+                return true;
+            }
 
             function dataEmail(email) {
                 return String(email || "")
@@ -4576,9 +4990,7 @@
                 document.getElementById("app").style.display = "none";
                 document.getElementById("liu").value = "";
                 document.getElementById("lip").value = "";
-                document
-                    .querySelectorAll(".adm")
-                    .forEach((el) => (el.style.display = "none"));
+                setAdminElementsVisible(false);
                 document.getElementById("admin-user-box-ra").style.display =
                     "none";
             }
@@ -4802,6 +5214,7 @@
                     BONOS = defBonos();
                     upsertBonos();
                 }
+                renderCargaHorasBonos();
                 MD = nextMD;
                 selBonos = nextSelBonos;
                 MESES.forEach((m) => {
@@ -4852,11 +5265,12 @@
             }
 
             function finalForMonth(m) {
+                recalcGastosAdelantosFromDiasGuardados(m);
                 const d = MD[m] || stateFromDefault(m);
                 const { oficina: tO, evento: tE } = getTarifasForMes(m);
                 const { sal } = calcMesAmounts(d, tO, tE);
                 const bonosDia = d.bonosDia || 0;
-                const extra = (sal * porcExtra) / 100;
+                const extra = extraSobreSaldo(sal);
                 return {
                     sal,
                     bonosDia,
@@ -4865,11 +5279,35 @@
                 };
             }
 
-            function paidForMonth(m) {
-                return SUELDOS.filter((s) => s.mes === m).reduce(
+            function compareSueldoRows(a, b) {
+                const af = a?.fecha_pago || "";
+                const bf = b?.fecha_pago || "";
+                if (af !== bf) return bf.localeCompare(af);
+                const ac = a?.created_at || "";
+                const bc = b?.created_at || "";
+                if (ac !== bc) return bc.localeCompare(ac);
+                return String(b?.id || "").localeCompare(String(a?.id || ""));
+            }
+
+            function sueldoRowsForMonth(m) {
+                return SUELDOS.filter((s) => s.mes === m).sort(compareSueldoRows);
+            }
+
+            function paidForMonthExcluding(m, ignoredId = "") {
+                return SUELDOS.filter((s) => s.mes === m && s.id !== ignoredId).reduce(
                     (sum, s) => sum + (Number(s.monto) || 0),
                     0,
                 );
+            }
+
+            function paidForMonth(m) {
+                return paidForMonthExcluding(m);
+            }
+
+            function paidThroughDisplayedSueldo(rows, index) {
+                return rows
+                    .slice(index)
+                    .reduce((sum, s) => sum + (Number(s.monto) || 0), 0);
             }
 
             function normalizeSueldoEstado(value, fallback = "parcial") {
@@ -4878,55 +5316,23 @@
                     : fallback;
             }
 
-            function manualSueldoEstadoForMonth(m) {
-                const row = SUELDOS.find((s) => s.mes === m);
-                return row ? normalizeSueldoEstado(row.estado) : null;
-            }
-
-            function sueldoMontoPendiente(final, paid, manualEstado = null) {
+            function sueldoMontoPendiente(final, paid) {
                 final = Number(final) || 0;
                 paid = Number(paid) || 0;
-                manualEstado = manualEstado
-                    ? normalizeSueldoEstado(manualEstado)
-                    : null;
-                if (manualEstado === "completo") return 0;
                 if (final <= 0) return 0;
                 return Math.max(final - paid, 0);
             }
 
-            function sueldoEstado(final, paid, manualEstado = null) {
+            function sueldoEstadoValue(final, paid) {
                 final = Number(final) || 0;
                 paid = Number(paid) || 0;
-                manualEstado = manualEstado
-                    ? normalizeSueldoEstado(manualEstado)
-                    : null;
-                if (manualEstado === "completo") {
-                    return {
-                        label: "Completo",
-                        color: "var(--green)",
-                        detail: "Marcado completo manualmente",
-                    };
-                }
-                if (manualEstado === "parcial") {
-                    return {
-                        label: "Parcial",
-                        color: "var(--amber)",
-                        detail:
-                            final > paid
-                                ? "Falta " + fmt(final - paid)
-                                : "Marcado parcial manualmente",
-                    };
-                }
-                if (manualEstado === "falta_pagar") {
-                    return {
-                        label: "Falta pagar",
-                        color: "var(--red)",
-                        detail:
-                            final > paid
-                                ? "Falta " + fmt(final - paid)
-                                : "Marcado falta pagar manualmente",
-                    };
-                }
+                if (final <= 0 || paid >= final) return "completo";
+                return paid > 0 ? "parcial" : "falta_pagar";
+            }
+
+            function sueldoEstado(final, paid) {
+                final = Number(final) || 0;
+                paid = Number(paid) || 0;
                 if (final < 0) {
                     return {
                         label: "Sin sueldo a pagar",
@@ -4966,6 +5372,22 @@
                     color: "var(--red)",
                     detail: "Falta " + fmt(final),
                 };
+            }
+
+            function syncSueldoFormEstado(scope) {
+                const prefix = scope === "md" ? "md-su" : "su";
+                const id = document.getElementById(`${prefix}-id`)?.value || "";
+                const mes =
+                    scope === "md"
+                        ? getMonthlySueldoMes()
+                        : document.getElementById("su-mes")?.value || getMesSafe();
+                const monto =
+                    Number(document.getElementById(`${prefix}-monto`)?.value) || 0;
+                const estado = document.getElementById(`${prefix}-estado`);
+                if (!estado || !mes) return;
+                const final = finalForMonth(mes).final;
+                const projectedPaid = paidForMonthExcluding(mes, id) + monto;
+                estado.value = sueldoEstadoValue(final, projectedPaid);
             }
 
             function sueldoBadge(status) {
@@ -5014,11 +5436,11 @@
 
                 const final = finalForMonth(mes).final;
                 const paid = paidForMonth(mes);
-                const manualEstado = manualSueldoEstadoForMonth(mes);
-                const pending = sueldoMontoPendiente(final, paid, manualEstado);
+                const pending = sueldoMontoPendiente(final, paid);
                 const overpaid = final > 0 ? Math.max(paid - final, 0) : 0;
-                const rows = SUELDOS.filter((s) => s.mes === mes);
-                const status = sueldoEstado(final, paid, manualEstado);
+                const rows = sueldoRowsForMonth(mes);
+                const status = sueldoEstado(final, paid);
+                syncSueldoFormEstado("su");
 
                 if (resumen) {
                     resumen.innerHTML = `
@@ -5032,11 +5454,16 @@
                 }
 
                 if (!list) return;
+                const listRenderKey = JSON.stringify(["su", mes, final, rows]);
                 if (!rows.length) {
-                    list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px;">Todavia no hay pagos registrados para ${escHtml(mes)}.</div>`;
+                    setStableHtml(
+                        list,
+                        listRenderKey,
+                        `<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px;">Todavia no hay pagos registrados para ${escHtml(mes)}.</div>`,
+                    );
                     return;
                 }
-                list.innerHTML = rows
+                const listHtml = rows
                     .map((s, index) => {
                         const paidUntilRow = rows
                             .slice(index)
@@ -5044,11 +5471,7 @@
                                 (sum, item) => sum + (Number(item.monto) || 0),
                                 0,
                             );
-                        const rowStatus = sueldoEstado(
-                            final,
-                            paidUntilRow,
-                            normalizeSueldoEstado(s.estado),
-                        );
+                        const rowStatus = sueldoEstado(final, paidUntilRow);
                         return `
                 <div id="sueldo-row-${s.id}" class="anim-row" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:var(--surface);">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
@@ -5066,6 +5489,7 @@
                 </div>`;
                     })
                     .join("");
+                setStableHtml(list, listRenderKey, listHtml);
             }
 
             function getMonthlySueldoMes() {
@@ -5083,11 +5507,11 @@
 
                 const final = finalForMonth(mes).final;
                 const paid = paidForMonth(mes);
-                const manualEstado = manualSueldoEstadoForMonth(mes);
-                const pending = sueldoMontoPendiente(final, paid, manualEstado);
+                const pending = sueldoMontoPendiente(final, paid);
                 const overpaid = final > 0 ? Math.max(paid - final, 0) : 0;
-                const status = sueldoEstado(final, paid, manualEstado);
-                const rows = SUELDOS.filter((s) => s.mes === mes);
+                const status = sueldoEstado(final, paid);
+                const rows = sueldoRowsForMonth(mes);
+                syncSueldoFormEstado("md");
 
                 if (resumen) {
                     resumen.innerHTML = `
@@ -5100,17 +5524,26 @@
                 }
 
                 if (!list) return;
+                const listRenderKey = JSON.stringify(["md", mes, final, rows]);
                 if (!rows.length) {
-                    list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:18px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--surface);">No hay pagos de sueldo registrados para ${escHtml(mes)}.</div>`;
+                    setStableHtml(
+                        list,
+                        listRenderKey,
+                        `<div style="text-align:center;color:var(--muted);padding:18px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--surface);">No hay pagos de sueldo registrados para ${escHtml(mes)}.</div>`,
+                    );
                     return;
                 }
-                list.innerHTML = rows
-                    .map(
-                        (s) => `
+                const listHtml = rows
+                    .map((s, index) => {
+                        const rowStatus = sueldoEstado(
+                            final,
+                            paidThroughDisplayedSueldo(rows, index),
+                        );
+                        return `
                 <div id="md-sueldo-row-${s.id}" class="anim-row" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:var(--surface);">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                     <div>
-                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:13px;font-weight:800;">${fmt(s.monto)}</span>${sueldoBadge(sueldoEstado(final, Number(s.monto) || 0, normalizeSueldoEstado(s.estado)))}</div>
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:13px;font-weight:800;">${fmt(s.monto)}</span>${sueldoBadge(rowStatus)}</div>
                       <div style="font-size:12px;color:var(--muted);">${escHtml(s.fecha_pago || "")} · ${escHtml(s.metodo || "transferencia")}</div>
                     </div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -5118,10 +5551,12 @@
                       <button class="bsave bsave-sm" style="background:var(--red);border:none;" onclick="deleteSueldo('${s.id}')">Borrar</button>
                     </div>
                   </div>
+                  <div style="font-size:12px;color:${rowStatus.color};margin-top:8px;font-weight:700;">${rowStatus.detail}</div>
                   ${s.nota ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;">${escHtml(s.nota)}</div>` : ""}
-                </div>`,
-                    )
+                </div>`;
+                    })
                     .join("");
+                setStableHtml(list, listRenderKey, listHtml);
             }
 
             function resetMonthlySueldoForm() {
@@ -5141,6 +5576,7 @@
                 if (nota) nota.value = "";
                 if (save) save.textContent = "Guardar pago";
                 if (cancel) cancel.style.display = "none";
+                syncSueldoFormEstado("md");
             }
 
             function editMonthlySueldo(id) {
@@ -5159,10 +5595,15 @@
                 document.getElementById("md-su-save").textContent =
                     "Actualizar pago";
                 document.getElementById("md-su-cancel").style.display = "";
+                syncSueldoFormEstado("md");
                 document.getElementById("md-su-monto").focus();
             }
 
             async function saveMonthlySueldo() {
+                if (!isAdm) {
+                    showAlert("er", "Solo el administrador puede registrar sueldos.");
+                    return;
+                }
                 const id = document.getElementById("md-su-id")?.value || "";
                 const mes = getMonthlySueldoMes();
                 const fecha =
@@ -5172,9 +5613,6 @@
                 const metodo =
                     document.getElementById("md-su-metodo")?.value ||
                     "transferencia";
-                const estado = normalizeSueldoEstado(
-                    document.getElementById("md-su-estado")?.value,
-                );
                 const nota =
                     document.getElementById("md-su-nota")?.value.trim() || "";
                 const owner = currentDataEmail();
@@ -5184,6 +5622,9 @@
                     return;
                 }
 
+                const final = finalForMonth(mes).final;
+                const projectedPaid = paidForMonthExcluding(mes, id) + monto;
+                const estado = sueldoEstadoValue(final, projectedPaid);
                 const payload = {
                     email: owner,
                     mes,
@@ -5212,6 +5653,10 @@
             }
 
             async function saveSueldo() {
+                if (!isAdm) {
+                    showAlert("er", "Solo el administrador puede registrar sueldos.");
+                    return;
+                }
                 const id = document.getElementById("su-id")?.value || "";
                 const mes = document.getElementById("su-mes")?.value || getMesSafe();
                 const fecha = document.getElementById("su-fecha")?.value || todayISO();
@@ -5219,9 +5664,6 @@
                 const metodo =
                     document.getElementById("su-metodo")?.value ||
                     "transferencia";
-                const estado = normalizeSueldoEstado(
-                    document.getElementById("su-estado")?.value,
-                );
                 const nota = document.getElementById("su-nota")?.value.trim() || "";
                 const owner = currentDataEmail();
 
@@ -5230,6 +5672,9 @@
                     return;
                 }
 
+                const final = finalForMonth(mes).final;
+                const projectedPaid = paidForMonthExcluding(mes, id) + monto;
+                const estado = sueldoEstadoValue(final, projectedPaid);
                 const payload = {
                     email: owner,
                     mes,
@@ -5274,6 +5719,7 @@
                 if (nota) nota.value = "";
                 if (save) save.textContent = "Guardar pago de sueldo";
                 if (cancel) cancel.style.display = "none";
+                syncSueldoFormEstado("su");
             }
 
             function editSueldo(id) {
@@ -5294,10 +5740,15 @@
                     "Actualizar pago de sueldo";
                 document.getElementById("su-cancel").style.display = "";
                 renderSueldos();
+                syncSueldoFormEstado("su");
                 document.getElementById("su-monto").focus();
             }
 
             async function deleteSueldo(id) {
+                if (!isAdm) {
+                    showAlert("er", "Solo el administrador puede borrar sueldos.");
+                    return;
+                }
                 if (!id) return;
                 const row = document.getElementById("sueldo-row-" + id);
                 if (row) row.classList.add("sol-row-deleting");
@@ -5319,9 +5770,16 @@
                     : "Sin conexión";
             }
 
+            function setAdminElementsVisible(show) {
+                document
+                    .querySelectorAll(".adm")
+                    .forEach((el) => (el.style.display = show ? "" : "none"));
+            }
+
             async function initApp() {
                 try {
                     isAdm = cu.rol === "admin";
+                    setAdminElementsVisible(isAdm);
                     if (isAdm) await loadAdminUsers();
                     await loadTarifas();
                     await loadPorcExtraFromDB();
@@ -5399,6 +5857,7 @@
                     }
 
                     if (!isAdm) {
+                        setAdminElementsVisible(false);
                         document.getElementById("tab-btn-ra").style.display =
                             "";
                         document.getElementById(
@@ -5406,9 +5865,7 @@
                         ).style.display = "";
                         showTab("ch");
                     } else {
-                        document
-                            .querySelectorAll(".adm")
-                            .forEach((el) => (el.style.display = ""));
+                        setAdminElementsVisible(true);
                         document.getElementById(
                             "admin-user-box-ra",
                         ).style.display = "";
@@ -5458,16 +5915,47 @@
             }
             function recalcGastosAdelantosFromDiasGuardados(m) {
                 if (!MD[m]) return;
-                const dias = mergeDias(m, MD[m].dias || []);
-                let gas = 0,
-                    adel = 0;
+                const guardados = Array.isArray(MD[m].dias) ? MD[m].dias : [];
+                const dias = mergeDias(m, guardados);
+                let hO = 0,
+                    hE = 0,
+                    gas = 0,
+                    adel = 0,
+                    bonDia = 0;
+                let hasJornadas = false;
                 let hasPlanillaImportes = false;
+                const { oficina: tO, evento: tE } = getTarifasForMes(m);
                 dias.forEach((r) => {
+                    let h = parseFloat(r.horas);
+                    if (!Number.isFinite(h) || h <= 0)
+                        h = calculateTimeDiff(r.horaInicio, r.horaFin);
+                    if (r.tipo === "Oficina") {
+                        hO += h;
+                        hasJornadas = true;
+                    } else if (r.tipo === "Evento") {
+                        hE += h;
+                        hasJornadas = true;
+                    }
                     if (hasAmountValue(r.gastos) || hasAmountValue(r.adelanto))
                         hasPlanillaImportes = true;
                     gas += parseFloat(r.gastos) || 0;
                     adel += parseFloat(r.adelanto) || 0;
+                    const tarifa =
+                        r.tipo === "Evento"
+                            ? tE
+                            : r.tipo === "Oficina"
+                              ? tO
+                              : 0;
+                    const cobrarDia = h * tarifa;
+                    const bono = BONOS.find((b) => b.id == r.bono);
+                    bonDia += bono ? bonoMonto(bono, cobrarDia) : 0;
                 });
+                if (guardados.length) MD[m].bonosDia = bonDia;
+                else MD[m].bonosDia = 0;
+                if (guardados.length && hasJornadas) {
+                    MD[m].hrsOficina = hO;
+                    MD[m].hrsEvento = hE;
+                }
                 if (!hasPlanillaImportes) return;
                 MD[m].gastos = gas;
                 MD[m].adelantos = adel;
@@ -5554,6 +6042,9 @@
             }
 
             async function showTab(id) {
+                if (!isAdm && (id === "md" || id === "cfg" || id === "su")) {
+                    id = "ch";
+                }
                 curTab = id;
                 ["ra", "md", "ch", "su", "cfg"].forEach((t) => {
                     const el = document.getElementById("tab-" + t);
@@ -5568,7 +6059,10 @@
                 ["ra", "md", "ch", "su", "cfg"].forEach((t) => {
                     const el = document.getElementById("tab-btn-" + t);
                     if (el) {
-                        const adm = t === "md" || t === "cfg" ? " adm" : "";
+                        const adm =
+                            t === "md" || t === "cfg" || t === "su"
+                                ? " adm"
+                                : "";
                         el.className = "tab" + adm + (t === id ? " on" : "");
                     }
                 });
@@ -5741,6 +6235,7 @@
                 const ok = await upsertBonos();
                 if (ok) {
                     renderBonos();
+                    renderCargaHorasBonos();
                     calcR();
                     calcD();
                     showSaved("svb");
@@ -5970,7 +6465,7 @@
                     )
                     .join("");
                 const feriadoRow = esFer
-                    ? `<tr style="background:var(--row-fer);"><td colspan="11" style="padding:3px 8px;font-size:10px;color:var(--row-text-fer);font-style:italic;">🏛️ FERIADO — ${escHtml(r.feriado)}</td></tr>`
+                    ? `<tr class="feriado-note" style="background:var(--row-fer);"><td colspan="11" style="padding:3px 8px;font-size:10px;color:var(--row-text-fer);font-style:italic;">🏛️ FERIADO — ${escHtml(r.feriado)}</td></tr>`
                     : "";
                 const diaClr = esFer
                     ? "var(--row-text-fer)"
@@ -5979,17 +6474,17 @@
                       : "var(--muted)";
 
                 return `${feriadoRow}<tr id="dr${i}" style="${rowBg}" class="${animClass}">
-                <td class="c-fd"><span class="df">${r.fecha}</span><span class="dd" style="color:${diaClr}">${r.dia}</span></td>
-                <td><select onchange="upD(${i},'tipo',this.value);recalcRow(${i});updateRowBg(${i});" title="Tipo de jornada"><optgroup label="Tipo">${tipoOpts}</optgroup></select></td>
-                <td><input type="text" class="inp-24h" value="${fmtHora24(r.horaInicio) || ""}" placeholder="08:00" maxlength="5" inputmode="numeric" title="Hora inicio 24h" oninput="upD(${i},'horaInicio',this.value);autoCalcListHrs(${i});" onblur="upD(${i},'horaInicio',this.value);autoCalcListHrs(${i}, true);" /></td>
-                <td><input type="text" class="inp-24h" value="${fmtHora24(r.horaFin) || ""}" placeholder="17:00" maxlength="5" inputmode="numeric" title="Hora fin 24h" oninput="upD(${i},'horaFin',this.value);autoCalcListHrs(${i});" onblur="upD(${i},'horaFin',this.value);autoCalcListHrs(${i}, true);" /></td>
-                <td><input type="number" value="${r.horas || ""}" placeholder="0" min="0" step="0.5" title="Horas" oninput="upD(${i},'horas',this.value);recalcRow(${i});" /></td>
-                <td class="c-desc"><input value="${descVal}" placeholder="Lugar" title="${descVal}" oninput="upD(${i},'desc',this.value);" /></td>
-                <td><input type="number" value="${r.gastos || ""}" placeholder="0" min="0" step="100" title="Gastos $" oninput="upD(${i},'gastos',this.value);recalcTotalesFromDias(null,true);" /></td>
-                <td class="c-det"><input value="${detVal}" placeholder="Detalle" title="${detVal}" oninput="upD(${i},'detGastos',this.value);" /></td>
-                <td><input type="number" value="${r.adelanto || ""}" placeholder="0" min="0" step="100" title="Adelanto $" oninput="upD(${i},'adelanto',this.value);recalcTotalesFromDias(null,true);" /></td>
-                <td><select onchange="upD(${i},'bono',this.value);recalcRow(${i});" title="Bono del día">${bonoOpts}</select></td>
-                <td class="c-cob" id="cobrar${i}">${totalDia > 0 ? fmt(totalDia) + (extraDia > 0 ? ` <span style="font-size:11px;color:var(--muted)">(+${fmt(extraDia)})</span>` : "") : "—"}</td>
+                <td class="c-fd" data-label="Fecha"><span class="df">${r.fecha}</span><span class="dd" style="color:${diaClr}">${r.dia}</span></td>
+                <td data-label="Tipo de jornada"><select onchange="upD(${i},'tipo',this.value);recalcRow(${i});updateRowBg(${i});" title="Tipo de jornada"><optgroup label="Tipo">${tipoOpts}</optgroup></select></td>
+                <td data-label="Hora inicio"><input type="text" class="inp-24h" value="${fmtHora24(r.horaInicio) || ""}" placeholder="08:00" maxlength="5" inputmode="numeric" title="Hora inicio 24h" oninput="upD(${i},'horaInicio',this.value);autoCalcListHrs(${i});" onblur="upD(${i},'horaInicio',this.value);autoCalcListHrs(${i}, true);" /></td>
+                <td data-label="Hora fin"><input type="text" class="inp-24h" value="${fmtHora24(r.horaFin) || ""}" placeholder="17:00" maxlength="5" inputmode="numeric" title="Hora fin 24h" oninput="upD(${i},'horaFin',this.value);autoCalcListHrs(${i});" onblur="upD(${i},'horaFin',this.value);autoCalcListHrs(${i}, true);" /></td>
+                <td data-label="Horas"><input type="number" value="${r.horas || ""}" placeholder="0" min="0" step="0.5" title="Horas" oninput="upD(${i},'horas',this.value);recalcRow(${i});" /></td>
+                <td class="c-desc" data-label="Lugar / descripción"><input value="${descVal}" placeholder="Lugar" title="${descVal}" oninput="upD(${i},'desc',this.value);" /></td>
+                <td data-label="Gastos ($)"><input type="number" value="${r.gastos || ""}" placeholder="0" min="0" step="100" title="Gastos $" oninput="upD(${i},'gastos',this.value);recalcTotalesFromDias(null,true);" /></td>
+                <td class="c-det" data-label="Detalle de gastos"><input value="${detVal}" placeholder="Detalle" title="${detVal}" oninput="upD(${i},'detGastos',this.value);" /></td>
+                <td data-label="Adelanto ($)"><input type="number" value="${r.adelanto || ""}" placeholder="0" min="0" step="100" title="Adelanto $" oninput="upD(${i},'adelanto',this.value);recalcTotalesFromDias(null,true);" /></td>
+                <td data-label="Bono"><select onchange="upD(${i},'bono',this.value);recalcRow(${i});" title="Bono del día">${bonoOpts}</select></td>
+                <td class="c-cob" data-label="Total del día" id="cobrar${i}">${totalDia > 0 ? fmt(totalDia) + (extraDia > 0 ? ` <span style="font-size:11px;color:var(--muted)">(+${fmt(extraDia)})</span>` : "") : "—"}</td>
               </tr>`;
             }
 
@@ -6246,8 +6741,15 @@
                 return { cO, cE, tot, gas, adel, sal };
             }
 
+            function extraSobreSaldo(sal) {
+                const base = Math.max(Number(sal) || 0, 0);
+                const pct = Math.max(Number(porcExtra) || 0, 0);
+                return (base * pct) / 100;
+            }
+
             function calcR() {
                 const m = document.getElementById("smr")?.value || "Abril";
+                recalcGastosAdelantosFromDiasGuardados(m);
                 const d = MD[m] || {
                     hrsOficina: 0,
                     hrsEvento: 0,
@@ -6258,7 +6760,7 @@
                 setTarifaInputs(m, "ra");
                 const { cO, cE, tot, sal } = calcMesAmounts(d, tO, tE);
                 const bonosDia = d.bonosDia || 0;
-                const bonExtra = (sal * porcExtra) / 100;
+                const bonExtra = extraSobreSaldo(sal);
                 const fin = sal + bonosDia + bonExtra;
                 if (curTab === "ra") {
                     const bnone = document.getElementById("bnone");
@@ -6285,6 +6787,7 @@
             }
             function calcD() {
                 const m = document.getElementById("smd")?.value || "Abril";
+                recalcGastosAdelantosFromDiasGuardados(m);
                 const d = MD[m] || {
                     hrsOficina: 0,
                     hrsEvento: 0,
@@ -6295,7 +6798,7 @@
                 setTarifaInputs(m, "md");
                 const { cO, cE, tot, sal } = calcMesAmounts(d, tO, tE);
                 const bonosDia = d.bonosDia || 0;
-                const bonExtra = (sal * porcExtra) / 100;
+                const bonExtra = extraSobreSaldo(sal);
                 const fin = sal + bonosDia + bonExtra;
                 const usd = dolar
                     ? `<span style="color:var(--muted);font-size:12px;font-weight:400;margin-left:6px;">(${fmtU(fin / dolar)})</span>`
@@ -6334,13 +6837,8 @@
             ) {
                 const gas = d.gastos || 0;
                 const sueldoPagado = paidForMonth(m);
-                const sueldoManual = manualSueldoEstadoForMonth(m);
-                const sueldoPendiente = sueldoMontoPendiente(
-                    fin,
-                    sueldoPagado,
-                    sueldoManual,
-                );
-                const sueldoStatus = sueldoEstado(fin, sueldoPagado, sueldoManual);
+                const sueldoPendiente = sueldoMontoPendiente(fin, sueldoPagado);
+                const sueldoStatus = sueldoEstado(fin, sueldoPagado);
                 return `<div class="rrow"><span class="rl">Mes</span><span class="rv">${m}</span></div>
                 <div class="rrow"><span class="rl">Hrs Oficina — ${d.hrsOficina} h × ${fmt(tO)}</span><span class="rv">${fmt(cO)}</span></div>
                 <div class="rrow"><span class="rl">Hrs Evento — ${d.hrsEvento} h × ${fmt(tE)}</span><span class="rv">${fmt(cE)}</span></div>
@@ -6366,10 +6864,12 @@
                     sG = 0,
                     sA = 0,
                     sS = 0,
+                    sExtra = 0,
                     sF = 0,
                     sP = 0,
                     sPend = 0;
                 MESES.forEach((m) => {
+                    recalcGastosAdelantosFromDiasGuardados(m);
                     const d = MD[m] || {
                         hrsOficina: 0,
                         hrsEvento: 0,
@@ -6386,17 +6886,13 @@
                     sG += gas;
                     sA += adel;
                     sS += sal;
-                    const extraMes = (sal * porcExtra) / 100;
+                    const extraMes = extraSobreSaldo(sal);
                     const finalMes = sal + bonosDia + extraMes;
                     const pagadoMes = paidForMonth(m);
-                    const manualMes = manualSueldoEstadoForMonth(m);
-                    const pendienteMes = sueldoMontoPendiente(
-                        finalMes,
-                        pagadoMes,
-                        manualMes,
-                    );
-                    const estadoMes = sueldoEstado(finalMes, pagadoMes, manualMes);
+                    const pendienteMes = sueldoMontoPendiente(finalMes, pagadoMes);
+                    const estadoMes = sueldoEstado(finalMes, pagadoMes);
                     const hasSueldoMes = finalMes !== 0 || pagadoMes > 0;
+                    sExtra += extraMes;
                     sF += finalMes;
                     sP += pagadoMes;
                     sPend += pendienteMes;
@@ -6415,8 +6911,8 @@
                   <td class="num" style="color:var(--green);">${pagadoMes ? fmt(pagadoMes) : "—"}</td>
                   <td class="num" style="color:${estadoMes.color};">${hasSueldoMes ? (pendienteMes > 0 ? fmt(pendienteMes) : estadoMes.label) : "—"}</td>${u}</tr>`;
                 });
-                const bonExtraY = (sS * porcExtra) / 100;
-                const finY = sS + sB + bonExtraY;
+                const bonExtraY = sExtra;
+                const finY = sF;
                 h += `</tbody><tfoot><tr style="background:var(--surface2);font-weight:600;">
                 <td>TOTAL</td><td class="num">${sO}</td><td class="num">${sE}</td>
                 <td class="num">${fmt(sC)}</td><td class="num" style="color:var(--green);">${fmt(sB)}</td><td class="num" style="color:var(--amber);">${fmt(sG)}</td><td class="num" style="color:var(--red);">${fmt(sA)}</td>
@@ -6470,11 +6966,12 @@
                     return;
                 }
                 const m = getMes();
+                recalcGastosAdelantosFromDiasGuardados(m);
                 const { oficina: tO, evento: tE } = getTarifasForMes(m);
                 const d = MD[m];
                 const { cO, cE, tot, sal } = calcMesAmounts(d, tO, tE);
                 const bonosDia = d?.bonosDia || 0;
-                const extra = (sal * porcExtra) / 100;
+                const extra = extraSobreSaldo(sal);
                 const fin = sal + bonosDia + extra;
                 const now = new Date(),
                     ns = now.toLocaleString("es-AR");
@@ -6525,6 +7022,7 @@
                     ],
                 ];
                 MESES.forEach((x) => {
+                    recalcGastosAdelantosFromDiasGuardados(x);
                     const xd = MD[x] || {
                         hrsOficina: 0,
                         hrsEvento: 0,
@@ -6541,12 +7039,11 @@
                         sal: xs,
                     } = calcMesAmounts(xd, xTarifaOficina, xTarifaEvento);
                     const xb = xd.bonosDia || 0;
-                    const xe = x === m ? extra : (xs * porcExtra) / 100;
+                    const xe = extraSobreSaldo(xs);
                     const xf = xs + xb + xe;
                     const xp = paidForMonth(x);
-                    const xManual = manualSueldoEstadoForMonth(x);
-                    const xEstado = sueldoEstado(xf, xp, xManual);
-                    const xpend = sueldoMontoPendiente(xf, xp, xManual);
+                    const xEstado = sueldoEstado(xf, xp);
+                    const xpend = sueldoMontoPendiente(xf, xp);
                     const row = [
                         x,
                         xd.hrsOficina,
@@ -6642,7 +7139,7 @@
                     ],
                     [],
                     [
-                        "🎁 50% EXTRA SOBRE SALDO",
+                        `🎁 ${porcExtra}% EXTRA SOBRE SALDO`,
                         "",
                         "",
                         "",
@@ -6654,14 +7151,13 @@
                     [],
                     ["PAGOS DE SUELDO"],
                     ["Fecha", "Monto", "Metodo", "Estado", "Nota"],
-                    ...SUELDOS.filter((s) => s.mes === m).map((s) => [
+                    ...sueldoRowsForMonth(m).map((s, index, rows) => [
                         s.fecha_pago,
                         s.monto,
                         s.metodo,
                         sueldoEstado(
                             fin,
-                            Number(s.monto) || 0,
-                            normalizeSueldoEstado(s.estado),
+                            paidThroughDisplayedSueldo(rows, index),
                         ).label,
                         s.nota || "",
                     ]),
@@ -6725,6 +7221,105 @@
                 }, 5000);
             }
 
+            function textoNormalizado(value) {
+                return String(value || "")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase();
+            }
+
+            function getBonoDomingo() {
+                return BONOS.find((bono) =>
+                    textoNormalizado(
+                        `${bono.name || ""} ${bono.desc || ""}`,
+                    ).includes("domingo"),
+                );
+            }
+
+            function leerBonoSolicitud(solicitud) {
+                const raw = String(solicitud?.det_gastos || "");
+                let explicito = false;
+                let bonoId = null;
+                const detalle = raw
+                    .replace(
+                        /(?:\r?\n)?\[\[BRADEM_BONO:(\d+)\]\]/g,
+                        (_, id) => {
+                            explicito = true;
+                            bonoId = Number(id) || null;
+                            return "";
+                        },
+                    )
+                    .trim();
+                return { explicito, bonoId, detalle };
+            }
+
+            function guardarBonoEnDetalle(detalle, bonoId) {
+                const limpio = leerBonoSolicitud({
+                    det_gastos: detalle,
+                }).detalle;
+                const marcador = `[[BRADEM_BONO:${bonoId || 0}]]`;
+                return limpio ? `${limpio}\n${marcador}` : marcador;
+            }
+
+            function bonoIdSolicitud(solicitud) {
+                return leerBonoSolicitud(solicitud).bonoId;
+            }
+
+            function getCargaHorasFechaInfo() {
+                const mes =
+                    document.getElementById("chmes")?.value || "Abril";
+                const dia =
+                    parseInt(document.getElementById("chdia")?.value, 10) || 1;
+                const mesIndex = Math.max(MESES.indexOf(mes), 0);
+                const fecha = new Date(2026, mesIndex, dia);
+                return {
+                    key: `2026-${String(mesIndex + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`,
+                    esDomingo: fecha.getDay() === 0,
+                };
+            }
+
+            function renderCargaHorasBonos() {
+                const select = document.getElementById("chbono");
+                if (!select) return;
+                const current = select.value;
+                select.innerHTML = [
+                    '<option value="">Sin bono</option>',
+                    ...BONOS.map(
+                        (bono) =>
+                            `<option value="${bono.id}">${escHtml(bono.name || `Bono ${bono.id}`)} — ${escHtml(bonoLabel(bono))}</option>`,
+                    ),
+                ].join("");
+                if (BONOS.some((bono) => String(bono.id) === current))
+                    select.value = current;
+                chUpdateFecha();
+            }
+
+            function actualizarAyudaBonoCarga(esDomingo, bonoDomingo) {
+                const hint = document.getElementById("chbono-hint");
+                if (!hint) return;
+                if (esDomingo && bonoDomingo) {
+                    hint.textContent =
+                        "Domingo detectado: el bono se aplicó automáticamente una vez a esta jornada.";
+                    hint.style.color = "var(--green)";
+                } else if (esDomingo) {
+                    hint.textContent =
+                        'Domingo detectado. Configurá un bono cuyo nombre incluya "Domingo" para automatizarlo.';
+                    hint.style.color = "var(--amber)";
+                } else {
+                    hint.textContent =
+                        "Si elegís un domingo, el Bono Domingo se selecciona automáticamente.";
+                    hint.style.color = "var(--muted)";
+                }
+            }
+
+            function onCargaHorasBonoChange() {
+                const select = document.getElementById("chbono");
+                if (!select) return;
+                const info = getCargaHorasFechaInfo();
+                cargaHorasBonoOverrides.set(info.key, select.value);
+                actualizarAyudaBonoCarga(info.esDomingo, getBonoDomingo());
+            }
+
             function chGetDiasSemana() {
                 const mes = document.getElementById("chmes")?.value || "Abril";
                 const mi = MESES.indexOf(mes);
@@ -6751,6 +7346,19 @@
             }
             function chUpdateFecha() {
                 calcHorasCH(false);
+                const select = document.getElementById("chbono");
+                if (!select) return;
+                const info = getCargaHorasFechaInfo();
+                const bonoDomingo = getBonoDomingo();
+                if (cargaHorasBonoOverrides.has(info.key)) {
+                    select.value = cargaHorasBonoOverrides.get(info.key);
+                } else {
+                    select.value =
+                        info.esDomingo && bonoDomingo
+                            ? String(bonoDomingo.id)
+                            : "";
+                }
+                actualizarAyudaBonoCarga(info.esDomingo, bonoDomingo);
             }
 
             document.addEventListener("DOMContentLoaded", () => {
@@ -6782,6 +7390,9 @@
                 const adelanto =
                     parseFloat(document.getElementById("chadelanto").value) ||
                     0;
+                const bonoValue =
+                    document.getElementById("chbono")?.value || "";
+                const bonoId = bonoValue ? Number(bonoValue) : null;
 
                 if (!horas || horas <= 0) {
                     showAlertCH(
@@ -6815,7 +7426,7 @@
                     horas,
                     descripcion: desc,
                     gastos,
-                    det_gastos: detGastos,
+                    det_gastos: guardarBonoEnDetalle(detGastos, bonoId),
                     adelanto,
                     estado: "pendiente",
                 });
@@ -6863,7 +7474,7 @@
             async function loadMisSolicitudes() {
                 const tb = document.getElementById("chtbody");
                 if (!tb) return;
-                tb.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px;">Cargando...</div>`;
+                const loadSeq = ++solicitudesLoadSeq;
 
                 const admBtns = document.getElementById("adm-sol-btns");
                 const solTitle = document.getElementById("sol-title");
@@ -6880,17 +7491,38 @@
                 if (!isAdm) q = q.eq("empleado_email", cu.email);
                 const { data, error } = await q;
 
-                if (error || !data || !data.length) {
-                    tb.innerHTML = `<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px;">${isAdm ? "No hay solicitudes pendientes." : "No tenés solicitudes enviadas."}</div>`;
+                if (loadSeq !== solicitudesLoadSeq) return;
+                if (error) {
+                    if (!solicitudesRenderKey)
+                        tb.innerHTML = `<div style="text-align:center;color:var(--red);padding:28px;font-size:13px;">No se pudieron actualizar las solicitudes.</div>`;
                     return;
                 }
+                const rows = data || [];
+                const nextRenderKey = JSON.stringify([
+                    dataEmail(cu?.email),
+                    isAdm,
+                    rows,
+                ]);
+                if (nextRenderKey === solicitudesRenderKey) return;
+
+                if (!rows.length) {
+                    tb.innerHTML = `<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px;">${isAdm ? "No hay solicitudes pendientes." : "No tenés solicitudes enviadas."}</div>`;
+                    solicitudesRenderKey = nextRenderKey;
+                    return;
+                }
+
+                const checkedIds = new Set(
+                    [...tb.querySelectorAll(".sol-chk:checked")].map(
+                        (c) => c.dataset.id,
+                    ),
+                );
                 const fmt2 = (n) =>
                     n ? `$${Number(n).toLocaleString("es-AR")}` : "—";
                 const tipoBg = (t) =>
                     t === "Evento"
                         ? "background:var(--green-bg);color:var(--green);"
                         : "background:var(--accent-light);color:var(--accent);";
-                tb.innerHTML = data
+                tb.innerHTML = rows
                     .map(
                         (r) => `
               <div id="sol-row-${r.id}" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:var(--surface);transition:box-shadow .15s;" class="anim-row">
@@ -6907,6 +7539,7 @@
                 </div>
                 <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:${isAdm ? "10px" : "0"};">
                   ${r.descripcion ? `<span>📍 <strong style="color:var(--text);">${r.descripcion}</strong></span>` : ""}
+                  ${bonoIdSolicitud(r) ? `<span>🎁 Bono: <strong style="color:var(--green);">${escHtml(BONOS.find((b) => b.id == bonoIdSolicitud(r))?.name || `Bono ${bonoIdSolicitud(r)}`)}</strong></span>` : ""}
                   ${r.gastos ? `<span>💸 Gastos: <strong style="color:var(--text);">${fmt2(r.gastos)}</strong></span>` : ""}
                   ${r.adelanto ? `<span>⬆ Adelanto: <strong style="color:var(--text);">${fmt2(r.adelanto)}</strong></span>` : ""}
                   <span style="margin-left:auto;">🕐 ${new Date(r.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
@@ -6923,6 +7556,10 @@
               </div>`,
                     )
                     .join("");
+                solicitudesRenderKey = nextRenderKey;
+                tb.querySelectorAll(".sol-chk").forEach((c) => {
+                    c.checked = checkedIds.has(c.dataset.id);
+                });
             }
 
             function toggleAllChk(checked) {
@@ -7006,6 +7643,11 @@
                     return;
                 }
                 const m = state;
+                const bonoSolicitud = leerBonoSolicitud(s);
+                const bonoDomingo =
+                    !bonoSolicitud.explicito && s.dia === "DOM"
+                        ? getBonoDomingo()
+                        : null;
 
                 const nuevoDia = {
                     fecha: s.fecha,
@@ -7016,8 +7658,11 @@
                     horas: Number(s.horas) || 0,
                     desc: s.descripcion || "",
                     gastos: Number(s.gastos) || 0,
-                    detGastos: s.det_gastos || "",
+                    detGastos: bonoSolicitud.detalle,
                     adelanto: Number(s.adelanto) || 0,
+                    bono: bonoSolicitud.explicito
+                        ? bonoSolicitud.bonoId || ""
+                        : bonoDomingo?.id || "",
                 };
 
                 const idx = m.dias.findIndex((d) => d.fecha === s.fecha);

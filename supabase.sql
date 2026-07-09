@@ -225,30 +225,18 @@ create policy "select sueldos"
 drop policy if exists "insert sueldos" on bw_sueldos;
 create policy "insert sueldos"
   on bw_sueldos for insert to authenticated
-  with check (
-    email = auth.email()
-    or exists (select 1 from bw_roles where email = auth.email() and rol = 'admin')
-  );
+  with check (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
 
 drop policy if exists "update sueldos" on bw_sueldos;
 create policy "update sueldos"
   on bw_sueldos for update to authenticated
-  using (
-    email = auth.email()
-    or exists (select 1 from bw_roles where email = auth.email() and rol = 'admin')
-  )
-  with check (
-    email = auth.email()
-    or exists (select 1 from bw_roles where email = auth.email() and rol = 'admin')
-  );
+  using (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'))
+  with check (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
 
 drop policy if exists "delete sueldos" on bw_sueldos;
 create policy "delete sueldos"
   on bw_sueldos for delete to authenticated
-  using (
-    email = auth.email()
-    or exists (select 1 from bw_roles where email = auth.email() and rol = 'admin')
-  );
+  using (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
 
 -- 4) Realtime
 alter table bw_meses replica identity full;
