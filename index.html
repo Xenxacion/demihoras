@@ -7608,8 +7608,26 @@
                         .select("*")
                         .eq("id", id)
                         .maybeSingle();
-                    if (sr) await aplicarSolicitud(sr);
-                    await sb.from("bw_solicitudes").delete().eq("id", id);
+                    if (!sr) {
+                        if (!batch)
+                            showAlertCH("er", "No se pudo cargar la solicitud.");
+                        return false;
+                    }
+                    const aplicada = await aplicarSolicitud(sr);
+                    if (!aplicada) return false;
+
+                    const { error: deleteError } = await sb
+                        .from("bw_solicitudes")
+                        .delete()
+                        .eq("id", id);
+                    if (deleteError) {
+                        if (!batch)
+                            showAlertCH(
+                                "wn",
+                                "La solicitud se aplicó, pero no se pudo eliminar. Podés reintentarlo sin duplicar el día.",
+                            );
+                        return false;
+                    }
                     const row = document.getElementById("sol-row-" + id);
                     if (row && !batch) {
                         row.classList.add("sol-row-removing");
@@ -7618,6 +7636,7 @@
                     }
                     if (!batch)
                         showAlertCH("ok", "✅ Solicitud aprobada y aplicada.");
+                    return true;
                 } else {
                     await sb.from("bw_solicitudes").delete().eq("id", id);
                     const row = document.getElementById("sol-row-" + id);
@@ -7640,9 +7659,10 @@
                         "er",
                         "No se pudo cargar el registro del empleado.",
                     );
-                    return;
+                    return false;
                 }
                 const m = state;
+                m.dias = Array.isArray(m.dias) ? m.dias : [];
                 const bonoSolicitud = leerBonoSolicitud(s);
                 const bonoDomingo =
                     !bonoSolicitud.explicito && s.dia === "DOM"
@@ -7688,6 +7708,16 @@
                 m.gastos = gas;
                 m.adelantos = adel;
 
+                const ok = await saveMesForEmail(owner, mes, m);
+                if (!ok) {
+                    setCloud(false);
+                    showAlertCH(
+                        "er",
+                        "No se pudo guardar el detalle mensual. La solicitud sigue pendiente.",
+                    );
+                    return false;
+                }
+
                 if (owner === currentDataEmail()) {
                     MD[mes] = m;
                     calcR();
@@ -7717,8 +7747,8 @@
                         6000,
                     );
                 }
-                const ok = await saveMesForEmail(owner, mes, m);
                 setCloud(ok);
+                return true;
             }
 
             function hideLoading(after = () => {}) {
