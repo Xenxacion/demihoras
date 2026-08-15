@@ -28,6 +28,7 @@ create table if not exists bw_config (
 create table if not exists bw_meses (
   mes text not null,
   email text not null,
+  anio integer not null default 2026,
   hrs_oficina numeric default 0,
   hrs_evento numeric default 0,
   gastos numeric default 0,
@@ -36,12 +37,13 @@ create table if not exists bw_meses (
   bonos_sel jsonb default '[]'::jsonb,
   tarifa_oficina numeric default 7000,
   tarifa_evento numeric default 7000,
-  primary key (email, mes)
+  primary key (email, anio, mes)
 );
 
 create table if not exists bw_solicitudes (
   id uuid default gen_random_uuid() primary key,
   empleado_email text not null,
+  anio integer not null default 2026,
   mes text not null,
   fecha text not null,
   dia text not null,
@@ -60,6 +62,7 @@ create table if not exists bw_solicitudes (
 create table if not exists bw_sueldos (
   id uuid default gen_random_uuid() primary key,
   email text not null,
+  anio integer not null default 2026,
   mes text not null,
   fecha_pago date not null default current_date,
   monto numeric not null check (monto > 0),
@@ -82,6 +85,12 @@ alter table bw_roles add column if not exists rol text;
 create unique index if not exists bw_roles_email_unique_idx on bw_roles (email);
 
 alter table bw_meses add column if not exists email text;
+alter table bw_meses add column if not exists anio integer;
+update bw_meses set anio = 2026 where anio is null;
+alter table bw_meses alter column anio set default 2026;
+alter table bw_meses alter column anio set not null;
+alter table bw_meses drop constraint if exists bw_meses_pkey;
+alter table bw_meses add constraint bw_meses_pkey primary key (email, anio, mes);
 alter table bw_meses add column if not exists tarifa_oficina numeric default 7000;
 alter table bw_meses add column if not exists tarifa_evento numeric default 7000;
 
@@ -93,11 +102,21 @@ alter table bw_bonos add constraint bw_bonos_tipo_check check (tipo in ('porcent
 
 alter table bw_solicitudes add column if not exists hora_inicio text default '';
 alter table bw_solicitudes add column if not exists hora_fin text default '';
+alter table bw_solicitudes add column if not exists anio integer;
+update bw_solicitudes set anio = 2026 where anio is null;
+alter table bw_solicitudes alter column anio set default 2026;
+alter table bw_solicitudes alter column anio set not null;
+create index if not exists bw_solicitudes_anio_idx on bw_solicitudes (anio);
 
 alter table bw_sueldos add column if not exists metodo text default 'transferencia';
 alter table bw_sueldos add column if not exists estado text default 'parcial';
 alter table bw_sueldos add column if not exists nota text default '';
 alter table bw_sueldos add column if not exists created_by text default auth.email();
+alter table bw_sueldos add column if not exists anio integer;
+update bw_sueldos set anio = 2026 where anio is null;
+alter table bw_sueldos alter column anio set default 2026;
+alter table bw_sueldos alter column anio set not null;
+create index if not exists bw_sueldos_email_anio_mes_idx on bw_sueldos (email, anio, mes);
 alter table bw_sueldos alter column estado set default 'parcial';
 update bw_sueldos
 set metodo = 'transferencia'
