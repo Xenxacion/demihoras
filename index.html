@@ -3102,12 +3102,7 @@
             <div class="topbar">
                 <div class="topbar-brand">
                     <span class="tb-logo">B</span> BRADEM
-                    <select
-                        id="year-select"
-                        class="tb-year"
-                        aria-label="Año de trabajo"
-                        onchange="setActiveYear(this.value)"
-                    ></select>
+                    <span id="active-year-label" class="tb-year"></span>
                 </div>
                 <div class="topbar-r">
                     <div class="cloud-st">
@@ -3152,6 +3147,22 @@
             </div>
             <div class="wrap">
                 <div id="abox"></div>
+
+                <div
+                    class="dcard"
+                    style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;margin-bottom:18px;"
+                >
+                    <div>
+                        <div class="dlbl">AÑO DE TRABAJO</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Cambia el resumen, detalle, solicitudes y pagos mostrados.</div>
+                    </div>
+                    <select
+                        id="year-select"
+                        aria-label="Año de trabajo"
+                        onchange="setActiveYear(this.value)"
+                        style="min-width:112px;padding:9px 11px;border:1px solid var(--accent);border-radius:7px;background:var(--surface2);color:var(--text);font:700 15px var(--sans);cursor:pointer;"
+                    ></select>
+                </div>
 
                 <div class="dcard">
                     <div class="dbadge">
@@ -4267,16 +4278,20 @@
             ];
             const ADMIN_EMAILS = ["bradem@gmail.com"];
             const DEFAULT_VIEW_EMAIL = "neienowo@gmail.com";
-            const FIRST_WORK_YEAR = 2026;
-            let activeYear = Math.max(
-                FIRST_WORK_YEAR,
-                new Date().getFullYear(),
-            );
+            const FIRST_WORK_YEAR = 2025;
+            let activeYear = FIRST_WORK_YEAR;
+            let activeYearInitialized = false;
             let initialMonthDefaultsApplied = false;
             let cargaHorasDateApplied = false;
 
             function getActiveYear() {
                 return Number(activeYear) || FIRST_WORK_YEAR;
+            }
+
+            function initializeActiveYearOnce() {
+                if (activeYearInitialized) return;
+                activeYear = Math.max(FIRST_WORK_YEAR, new Date().getFullYear());
+                activeYearInitialized = true;
             }
 
             function renderYearSelect() {
@@ -4288,6 +4303,8 @@
                     (_, i) => `<option value="${FIRST_WORK_YEAR + i}">${FIRST_WORK_YEAR + i}</option>`,
                 ).join("");
                 select.value = String(getActiveYear());
+                const label = document.getElementById("active-year-label");
+                if (label) label.textContent = `· ${getActiveYear()}`;
             }
 
             async function setActiveYear(year) {
@@ -5011,6 +5028,7 @@
                 adminUsers = [];
                 initialMonthDefaultsApplied = false;
                 cargaHorasDateApplied = false;
+                activeYearInitialized = false;
                 if (window._poll) {
                     clearInterval(window._poll);
                     window._poll = null;
@@ -5844,6 +5862,7 @@
 
             async function initApp() {
                 try {
+                    initializeActiveYearOnce();
                     renderYearSelect();
                     isAdm = cu.rol === "admin";
                     setAdminElementsVisible(isAdm);
