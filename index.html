@@ -7573,7 +7573,6 @@
                 let q = sb
                     .from("bw_solicitudes")
                     .select("*")
-                    .eq("anio", getActiveYear())
                     .order("created_at", { ascending: false });
                 if (!isAdm) q = q.eq("empleado_email", cu.email);
                 const { data, error } = await q;
@@ -7617,6 +7616,7 @@
                   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                     ${isAdm ? `<input type="checkbox" class="sol-chk" data-id="${r.id}" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;"/>` : ""}
                     ${isAdm ? `<span style="font-size:11px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px;">👤 ${r.empleado_email.split("@")[0]}</span>` : ""}
+                    <span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:4px;">Año ${r.anio || String(r.fecha || "").slice(-4)}</span>
                     <span style="font-weight:600;font-size:13px;">${r.mes}</span>
                     <span style="font-family:var(--mono);font-size:12px;color:var(--muted);">${r.fecha} · ${r.dia}</span>
                     <span style="${tipoBg(r.tipo)}padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${r.tipo}</span>
