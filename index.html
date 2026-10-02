@@ -3041,6 +3041,102 @@
                     display: none;
                 }
             }
+
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                gap: 10px;
+                margin: 0 0 18px;
+            }
+            .dashboard-metric {
+                min-width: 0;
+                padding: 14px 16px;
+                border: 1px solid var(--border);
+                border-radius: 9px;
+                background: var(--surface);
+            }
+            .dashboard-metric-label {
+                color: var(--muted);
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: .04em;
+                text-transform: uppercase;
+            }
+            .dashboard-metric-value {
+                margin-top: 7px;
+                color: var(--text);
+                font-size: clamp(18px, 2.3vw, 24px);
+                font-weight: 800;
+                overflow-wrap: anywhere;
+            }
+            .dashboard-metric-link {
+                width: 100%;
+                color: inherit;
+                text-align: left;
+                cursor: pointer;
+                font: inherit;
+            }
+            .dashboard-metric-link:hover {
+                border-color: var(--accent);
+            }
+            .request-filters,
+            .audit-filters {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+                margin-bottom: 12px;
+            }
+            .request-filters label,
+            .audit-filters label {
+                display: grid;
+                gap: 5px;
+                min-width: 0;
+                color: var(--muted);
+                font-size: 11px;
+                font-weight: 700;
+            }
+            .request-filters select,
+            .request-filters input,
+            .audit-filters select,
+            .audit-filters input {
+                width: 100%;
+                min-width: 0;
+                min-height: 40px;
+                padding: 8px 10px;
+                border: 1px solid var(--border2);
+                border-radius: 7px;
+                background: var(--surface2);
+                color: var(--text);
+                font: 14px var(--sans);
+            }
+            .audit-diff {
+                display: block;
+                margin: 6px 0 0;
+                color: var(--muted);
+                font-size: 11px;
+                line-height: 1.5;
+            }
+            .save-feedback {
+                display: none;
+                margin: 0 0 12px;
+                padding: 9px 12px;
+                border: 1px solid var(--border);
+                border-radius: 7px;
+                background: var(--surface);
+                color: var(--muted);
+                font-size: 12px;
+            }
+            .save-feedback.show { display: block; }
+            .save-feedback.success { color: var(--green); }
+            .save-feedback.error { color: var(--red); }
+            @media (max-width: 720px) {
+                .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .dashboard-metric { padding: 12px; }
+                .request-filters,
+                .audit-filters { grid-template-columns: minmax(0, 1fr); }
+                #chtbody .sol-chk { width: 22px !important; height: 22px !important; }
+                #chtbody button { min-height: 42px; }
+            }
         </style>
     </head>
     <body>
@@ -3148,6 +3244,7 @@
             </div>
             <div class="wrap">
                 <div id="abox"></div>
+                <div id="save-feedback" class="save-feedback" role="status" aria-live="polite"></div>
 
                 <div
                     class="dcard"
@@ -3214,7 +3311,7 @@
                         </div>
                         <div class="tbox" style="max-width: 200px">
                             <label>Mes seleccionado</label>
-                            <select id="smr" onchange="calcR()">
+                            <select id="smr" onchange="calcR(); loadDashboardPendingCount()">
                                 <option>Enero</option>
                                 <option>Febrero</option>
                                 <option>Marzo</option>
@@ -3229,6 +3326,14 @@
                                 <option>Diciembre</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="stitle">Resumen del mes · <span id="dashboard-month-label"></span></div>
+                    <div class="dashboard-grid" aria-label="Resumen mensual">
+                        <div class="dashboard-metric"><div class="dashboard-metric-label">Horas del mes</div><div class="dashboard-metric-value" id="dashboard-hours">—</div></div>
+                        <div class="dashboard-metric"><div class="dashboard-metric-label">Sueldo calculado</div><div class="dashboard-metric-value" id="dashboard-final">—</div></div>
+                        <div class="dashboard-metric"><div class="dashboard-metric-label">Pagado</div><div class="dashboard-metric-value" id="dashboard-paid">—</div></div>
+                        <div class="dashboard-metric"><div class="dashboard-metric-label">Pendiente de pago</div><div class="dashboard-metric-value" id="dashboard-pending-pay">—</div></div>
+                        <button class="dashboard-metric dashboard-metric-link" type="button" onclick="openPendingRequests()"><div class="dashboard-metric-label">Solicitudes pendientes del mes</div><div class="dashboard-metric-value" id="dashboard-requests">—</div></button>
                     </div>
                     <div class="trow" style="margin-bottom: 20px">
                         <div class="tbox adm" style="min-width: 220px">
@@ -4091,6 +4196,26 @@
                             </div>
                         </div>
                         <div class="debody" style="padding: 10px 16px 16px">
+                            <div class="request-filters" aria-label="Filtros de solicitudes">
+                                <label>Estado
+                                    <select id="sol-filter-status" onchange="loadMisSolicitudes()">
+                                        <option value="">Todos los estados</option>
+                                        <option value="pendiente">Pendientes</option>
+                                    </select>
+                                </label>
+                                <label>Mes
+                                    <select id="sol-filter-month" onchange="loadMisSolicitudes()">
+                                        <option value="">Todos los meses</option>
+                                        <option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option>
+                                        <option>Mayo</option><option>Junio</option><option>Julio</option><option>Agosto</option>
+                                        <option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+                                    </select>
+                                </label>
+                                <label id="sol-filter-user-wrap" style="display:none">Empleado
+                                    <input id="sol-filter-user" type="search" placeholder="Buscar por email" oninput="scheduleSolicitudSearch()" autocomplete="off" />
+                                </label>
+                            </div>
+                            <div id="sol-results-count" role="status" style="margin:0 0 10px;color:var(--muted);font-size:12px"></div>
                             <div id="chtbody">
                                 <div
                                     style="
@@ -4276,8 +4401,34 @@
                                 Actualizar
                             </button>
                         </div>
-                        <div class="debody" id="audit-history" style="padding:12px 16px">
-                            <div style="color:var(--muted);font-size:12px">Cargando historial...</div>
+                        <div class="debody" style="padding:12px 16px">
+                            <div class="audit-filters" aria-label="Filtros del historial">
+                                <label>Tabla
+                                    <select id="audit-filter-table" onchange="loadAuditHistory()">
+                                        <option value="">Todas</option>
+                                        <option value="bw_meses">Meses</option><option value="bw_solicitudes">Solicitudes</option>
+                                        <option value="bw_sueldos">Sueldos</option><option value="bw_roles">Usuarios</option>
+                                        <option value="bw_bonos">Bonos</option><option value="bw_config">Configuración</option>
+                                    </select>
+                                </label>
+                                <label>Acción
+                                    <select id="audit-filter-operation" onchange="loadAuditHistory()">
+                                        <option value="">Todas</option><option value="INSERT">Creación</option>
+                                        <option value="UPDATE">Edición</option><option value="DELETE">Borrado</option>
+                                    </select>
+                                </label>
+                                <label>Usuario
+                                    <input id="audit-filter-user" type="search" placeholder="Buscar por email" onchange="loadAuditHistory()" autocomplete="off" />
+                                </label>
+                                <label>Desde
+                                    <input id="audit-filter-from" type="date" onchange="loadAuditHistory()" />
+                                </label>
+                                <label>Hasta
+                                    <input id="audit-filter-to" type="date" onchange="loadAuditHistory()" />
+                                </label>
+                            </div>
+                            <div id="audit-results-count" role="status" style="margin:0 0 8px;color:var(--muted);font-size:12px"></div>
+                            <div id="audit-history" style="color:var(--muted);font-size:12px">Cargando historial...</div>
                         </div>
                     </div>
                 </div>
@@ -4351,6 +4502,7 @@
                     showAlert("er", "No se pudo cargar la información del año seleccionado.");
                     return;
                 }
+                loadDashboardPendingCount();
                 onMC(true);
                 calcR();
                 renderAT();
@@ -4386,7 +4538,9 @@
                 tarifaOficina = 7000,
                 tarifaEvento = 7000;
             let solicitudesLoadSeq = 0,
-                solicitudesRenderKey = "";
+                solicitudesRenderKey = "",
+                solicitudesSearchTimer = null,
+                dashboardRequestSeq = 0;
             const cargaHorasBonoOverrides = new Map();
             const stableHtmlKeys = new WeakMap();
 
@@ -4858,6 +5012,7 @@
                 renderBcfg();
                 onMC(true);
                 calcR();
+                loadDashboardPendingCount();
                 renderAT();
                 renderSueldos();
                 setEditable(isAdm);
@@ -5522,6 +5677,7 @@
                         );
                     }
                     renderAT();
+                    renderDashboardSummary();
                     renderSueldos();
                     renderMonthlySueldos();
                     if (curTab === "md") calcD();
@@ -5529,6 +5685,7 @@
                 }
                 SUELDOS = data || [];
                 renderAT();
+                renderDashboardSummary();
                 renderSueldos();
                 renderMonthlySueldos();
                 if (curTab === "md") calcD();
@@ -5877,6 +6034,13 @@
             function setCloud(ok) {
                 document.getElementById("cdot").className =
                     "dot " + (ok ? "dg" : "dr");
+                if (!ok)
+                    setSaveFeedback("error", "Sin conexión con la nube. Los cambios pueden no haberse guardado.");
+                else {
+                    const feedback = document.getElementById("save-feedback");
+                    if (feedback?.textContent.startsWith("Sin conexión con la nube."))
+                        feedback.classList.remove("show");
+                }
                 document.getElementById("ctxt").textContent = ok
                     ? "En línea"
                     : "Sin conexión";
@@ -5914,6 +6078,7 @@
                     onMC(true);
                     calcR();
                     renderAT();
+                    loadDashboardPendingCount();
                     fetchDolar();
                     setEditable(isAdm);
                     setCloud(true);
@@ -6266,22 +6431,48 @@
                 const container = document.getElementById("audit-history");
                 if (!container || !isAdm || !sb) return;
                 container.innerHTML = '<div style="color:var(--muted);font-size:12px">Cargando historial...</div>';
-                const { data, error } = await sb.from("bw_audit_log").select("id,changed_at,changed_by,table_name,operation,record_key,old_data,new_data").order("changed_at", { ascending: false }).limit(50);
+                let q = sb.from("bw_audit_log")
+                    .select("id,changed_at,changed_by,table_name,operation,record_key,old_data,new_data")
+                    .order("changed_at", { ascending: false });
+                const table = document.getElementById("audit-filter-table")?.value || "";
+                const operation = document.getElementById("audit-filter-operation")?.value || "";
+                const actor = document.getElementById("audit-filter-user")?.value.trim() || "";
+                const from = document.getElementById("audit-filter-from")?.value || "";
+                const to = document.getElementById("audit-filter-to")?.value || "";
+                if (table) q = q.eq("table_name", table);
+                if (operation) q = q.eq("operation", operation);
+                if (actor) q = q.ilike("changed_by", `%${actor}%`);
+                if (from) q = q.gte("changed_at", new Date(`${from}T00:00:00`).toISOString());
+                if (to) {
+                    const end = new Date(`${to}T00:00:00`);
+                    end.setDate(end.getDate() + 1);
+                    q = q.lt("changed_at", end.toISOString());
+                }
+                const { data, error } = await q.limit(100);
                 if (error) {
-                    container.innerHTML = '<div style="color:var(--muted);font-size:12px">El historial estará disponible al ejecutar la actualización de supabase.sql.</div>';
+                    container.innerHTML = '<div style="color:var(--muted);font-size:12px">No se pudo cargar el historial. Revisá la conexión y los permisos de Supabase.</div>';
                     return;
                 }
+                const count = document.getElementById("audit-results-count");
+                if (count) count.textContent = `${data?.length || 0} cambios recientes (máximo 100)`;
                 if (!data?.length) {
-                    container.innerHTML = '<div style="color:var(--muted);font-size:12px">Todavía no hay cambios registrados.</div>';
+                    container.innerHTML = '<div style="color:var(--muted);font-size:12px">No hay cambios que coincidan con los filtros.</div>';
                     return;
                 }
                 container.innerHTML = data.map((row) => {
                     const when = new Date(row.changed_at).toLocaleString("es-AR");
                     const payload = JSON.stringify({ anterior: row.old_data, nuevo: row.new_data }, null, 2);
-                    return `<details style="padding:9px 0;border-bottom:1px solid var(--border)"><summary style="cursor:pointer;font-size:12px"><b>${escHtml(row.operation)}</b> ${escHtml(row.table_name)} · ${escHtml(row.record_key || "registro")} · ${escHtml(row.changed_by || "usuario desconocido")} · ${escHtml(when)}</summary><pre style="white-space:pre-wrap;overflow:auto;max-height:240px;font-size:11px;color:var(--muted)">${escHtml(payload)}</pre></details>`;
+                    const oldRow = row.old_data || {};
+                    const newRow = row.new_data || {};
+                    const fields = [...new Set([...Object.keys(oldRow), ...Object.keys(newRow)])]
+                        .filter((key) => JSON.stringify(oldRow[key]) !== JSON.stringify(newRow[key]));
+                    const action = row.operation === "INSERT" ? "Creó" : row.operation === "DELETE" ? "Borró" : "Modificó";
+                    const change = row.operation === "UPDATE"
+                        ? (fields.length ? `Campos modificados: ${fields.map(escHtml).join(", ")}` : "Sin campos distintos")
+                        : `${fields.length} campo${fields.length === 1 ? "" : "s"} en el registro`;
+                    return `<details style="padding:9px 0;border-bottom:1px solid var(--border)"><summary style="cursor:pointer;font-size:12px"><b>${escHtml(action)} ${escHtml(row.table_name)}</b> · ${escHtml(row.record_key || "registro")} · ${escHtml(row.changed_by || "usuario desconocido")} · ${escHtml(when)}<span class="audit-diff">${change}</span></summary><details style="margin:8px 0 0 12px"><summary style="cursor:pointer;font-size:11px;color:var(--accent)">Ver datos completos</summary><pre style="white-space:pre-wrap;overflow:auto;max-height:240px;font-size:11px;color:var(--muted)">${escHtml(payload)}</pre></details></details>`;
                 }).join("");
             }
-
             const fmt = (n) =>
                 new Intl.NumberFormat("es-AR", {
                     style: "currency",
@@ -6907,6 +7098,18 @@
                 if (!el) return;
                 el.classList.add("show");
                 setTimeout(() => el.classList.remove("show"), 3000);
+                setSaveFeedback("success", "Cambios guardados en la nube.");
+            }
+
+            function setSaveFeedback(type, message) {
+                const el = document.getElementById("save-feedback");
+                if (!el) return;
+                el.className = `save-feedback show ${type || ""}`.trim();
+                el.textContent = message;
+                clearTimeout(el._hideTimer);
+                if (type === "success") {
+                    el._hideTimer = setTimeout(() => el.classList.remove("show"), 4500);
+                }
             }
 
             function calcMesAmounts(d, tO, tE) {
@@ -6968,6 +7171,56 @@
                     bonosDia,
                     bonExtra,
                 );
+                renderDashboardSummary();
+            }
+
+            function renderDashboardSummary() {
+                const mes = document.getElementById("smr")?.value || getMesSafe();
+                const monthLabel = document.getElementById("dashboard-month-label");
+                if (monthLabel) monthLabel.textContent = `${mes} ${getActiveYear()}`;
+                const d = MD[mes] || stateFromDefault(mes);
+                const hours = (Number(d.hrsOficina) || 0) + (Number(d.hrsEvento) || 0);
+                const final = finalForMonth(mes).final;
+                const paid = paidForMonth(mes);
+                const pending = sueldoMontoPendiente(final, paid);
+                const values = {
+                    "dashboard-hours": `${hours.toLocaleString("es-AR", { maximumFractionDigits: 1 })} h`,
+                    "dashboard-final": fmt(final),
+                    "dashboard-paid": fmt(paid),
+                    "dashboard-pending-pay": fmt(pending),
+                };
+                Object.entries(values).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = value;
+                });
+            }
+
+            async function loadDashboardPendingCount() {
+                const el = document.getElementById("dashboard-requests");
+                const email = currentDataEmail();
+                if (!el || !email || !sb) return;
+                const seq = ++dashboardRequestSeq;
+                el.textContent = "…";
+                const month = document.getElementById("smr")?.value || "";
+                const { count, error } = await sb
+                    .from("bw_solicitudes")
+                    .select("id", { count: "exact", head: true })
+                    .eq("anio", getActiveYear())
+                    .eq("mes", month)
+                    .eq("empleado_email", email)
+                    .eq("estado", "pendiente");
+                if (seq !== dashboardRequestSeq) return;
+                el.textContent = error ? "—" : String(count || 0);
+            }
+
+            function openPendingRequests() {
+                const status = document.getElementById("sol-filter-status");
+                const month = document.getElementById("sol-filter-month");
+                const employee = document.getElementById("sol-filter-user");
+                if (status) status.value = "pendiente";
+                if (month) month.value = document.getElementById("smr")?.value || "";
+                if (employee) employee.value = isAdm ? currentDataEmail() : "";
+                showTab("ch");
             }
             function calcD() {
                 const m = document.getElementById("smd")?.value || "Abril";
@@ -7106,6 +7359,7 @@
                 <td style="font-size:16px;color:var(--accent);">${fmt(finY)}</td><td></td><td style="color:var(--green);">${fmt(sP)}</td><td style="color:var(--amber);">${fmt(sPend)}</td>${dolar ? `<td style="font-size:12px;color:var(--muted);">${fmtU(finY / dolar)}</td>` : ""}
               </tr></tfoot>`;
                 document.getElementById("at").innerHTML = h;
+                renderDashboardSummary();
             };
             function goMes(m) {
                 document.getElementById("smd").value = m;
@@ -7377,6 +7631,9 @@
             }
 
             function showAlert(t, msg) {
+                if (t === "er") setSaveFeedback("error", msg);
+                if (t === "ok" && textoNormalizado(msg).includes("guardad"))
+                    setSaveFeedback("success", "Cambios guardados en la nube.");
                 const b = document.getElementById("abox");
                 const c = t === "ok" ? "aok" : t === "er" ? "aer" : "awn";
                 b.innerHTML = `<div class="alert ${c}">${msg}</div>`;
@@ -7391,6 +7648,9 @@
                 }, 5000);
             }
             function showAlertCH(t, msg) {
+                if (t === "er") setSaveFeedback("error", msg);
+                if (t === "ok" && msg.toLowerCase().includes("solicitud"))
+                    loadDashboardPendingCount();
                 const b = document.getElementById("chabox");
                 const c = t === "ok" ? "aok" : t === "er" ? "aer" : "awn";
                 b.innerHTML = `<div class="alert ${c}">${msg}</div>`;
@@ -7658,6 +7918,8 @@
 
                 const admBtns = document.getElementById("adm-sol-btns");
                 const solTitle = document.getElementById("sol-title");
+                const userFilterWrap = document.getElementById("sol-filter-user-wrap");
+                if (userFilterWrap) userFilterWrap.style.display = isAdm ? "grid" : "none";
                 if (admBtns) admBtns.style.display = isAdm ? "flex" : "none";
                 if (solTitle)
                     solTitle.textContent = isAdm
@@ -7670,18 +7932,33 @@
                     .eq("anio", getActiveYear())
                     .order("created_at", { ascending: false });
                 if (!isAdm) q = q.eq("empleado_email", cu.email);
+                const statusFilter = document.getElementById("sol-filter-status")?.value || "";
+                const monthFilter = document.getElementById("sol-filter-month")?.value || "";
+                const userFilter = isAdm
+                    ? document.getElementById("sol-filter-user")?.value.trim() || ""
+                    : "";
+                if (statusFilter) q = q.eq("estado", statusFilter);
+                if (monthFilter) q = q.eq("mes", monthFilter);
+                if (userFilter) q = q.ilike("empleado_email", `%${userFilter}%`);
                 const { data, error } = await q;
 
                 if (loadSeq !== solicitudesLoadSeq) return;
                 if (error) {
+                    const count = document.getElementById("sol-results-count");
+                    if (count) count.textContent = "No se pudieron cargar las solicitudes. Revisá la conexión.";
                     if (!solicitudesRenderKey)
                         tb.innerHTML = `<div style="text-align:center;color:var(--red);padding:28px;font-size:13px;">No se pudieron actualizar las solicitudes.</div>`;
                     return;
                 }
                 const rows = data || [];
+                const count = document.getElementById("sol-results-count");
+                if (count) count.textContent = `${rows.length} solicitud${rows.length === 1 ? "" : "es"} encontrada${rows.length === 1 ? "" : "s"}`;
                 const nextRenderKey = JSON.stringify([
                     dataEmail(cu?.email),
                     isAdm,
+                    statusFilter,
+                    monthFilter,
+                    userFilter,
                     rows,
                 ]);
                 if (nextRenderKey === solicitudesRenderKey) return;
@@ -7742,6 +8019,11 @@
                 tb.querySelectorAll(".sol-chk").forEach((c) => {
                     c.checked = checkedIds.has(c.dataset.id);
                 });
+            }
+
+            function scheduleSolicitudSearch() {
+                if (solicitudesSearchTimer) clearTimeout(solicitudesSearchTimer);
+                solicitudesSearchTimer = setTimeout(loadMisSolicitudes, 300);
             }
 
             function toggleAllChk(checked) {

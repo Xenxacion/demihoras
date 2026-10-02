@@ -86,6 +86,9 @@ create table if not exists bw_audit_log (
 
 create index if not exists bw_audit_log_changed_at_idx on bw_audit_log (changed_at desc);
 
+-- Borrar logs: descomenta y ejecuta esta linea manualmente cuando quieras vaciar el historial.
+-- delete from public.bw_audit_log;
+
 create table if not exists bw_backup_snapshots (
   id bigint generated always as identity primary key,
   snapshot_date date not null unique default current_date,
