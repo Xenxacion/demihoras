@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>BRADEM — Registro de Horas 2026</title>
+        <title>BRADEM — Registro de Horas</title>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
         <link
             rel="preconnect"
@@ -748,6 +748,10 @@
                 font-weight: 400;
                 letter-spacing: 0.05em;
                 margin-left: 4px;
+                color: inherit;
+                background: transparent;
+                border: 0;
+                cursor: pointer;
             }
             .topbar-r {
                 display: flex;
@@ -3049,7 +3053,7 @@
             <div class="ld-inner">
                 <div class="ld-mark">B</div>
                 <div class="ld-brand">BRADEM</div>
-                <div class="ld-tagline">Registro de horas · 2026</div>
+                <div class="ld-tagline">Registro de horas</div>
                 <div class="ld-bar"><div class="ld-bar-fill"></div></div>
                 <div class="ld-msg" id="ldmsg">Conectando con la nube...</div>
             </div>
@@ -3066,7 +3070,7 @@
                 <div class="lhero">
                     <div class="lmark">B</div>
                     <div class="lbrand">BRADEM</div>
-                    <p class="ltagline">Registro de horas · 2026</p>
+                    <p class="ltagline">Registro de horas</p>
                 </div>
                 <div id="lerr" class="lerr">Email o contraseña incorrectos</div>
                 <div class="lfields">
@@ -3098,7 +3102,7 @@
             <div class="topbar">
                 <div class="topbar-brand">
                     <span class="tb-logo">B</span> BRADEM
-                    <span class="tb-year">2026</span>
+                    <span id="active-year-label" class="tb-year"></span>
                 </div>
                 <div class="topbar-r">
                     <div class="cloud-st">
@@ -3143,6 +3147,22 @@
             </div>
             <div class="wrap">
                 <div id="abox"></div>
+
+                <div
+                    class="dcard"
+                    style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;margin-bottom:18px;"
+                >
+                    <div>
+                        <div class="dlbl">AÑO DE TRABAJO</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Cambia el resumen, detalle, solicitudes y pagos mostrados.</div>
+                    </div>
+                    <select
+                        id="year-select"
+                        aria-label="Año de trabajo"
+                        onchange="setActiveYear(this.value)"
+                        style="min-width:112px;padding:9px 11px;border:1px solid var(--accent);border-radius:7px;background:var(--surface2);color:var(--text);font:700 15px var(--sans);cursor:pointer;"
+                    ></select>
+                </div>
 
                 <div class="dcard">
                     <div class="dbadge">
@@ -4258,8 +4278,61 @@
             ];
             const ADMIN_EMAILS = ["bradem@gmail.com"];
             const DEFAULT_VIEW_EMAIL = "neienowo@gmail.com";
+            const FIRST_WORK_YEAR = 2025;
+            let activeYear = FIRST_WORK_YEAR;
+            let activeYearInitialized = false;
             let initialMonthDefaultsApplied = false;
             let cargaHorasDateApplied = false;
+
+            function getActiveYear() {
+                return Number(activeYear) || FIRST_WORK_YEAR;
+            }
+
+            function initializeActiveYearOnce() {
+                if (activeYearInitialized) return;
+                activeYear = Math.max(FIRST_WORK_YEAR, new Date().getFullYear());
+                activeYearInitialized = true;
+            }
+
+            function renderYearSelect() {
+                const select = document.getElementById("year-select");
+                if (!select) return;
+                const lastYear = Math.max(getActiveYear() + 1, new Date().getFullYear() + 5);
+                select.innerHTML = Array.from(
+                    { length: lastYear - FIRST_WORK_YEAR + 1 },
+                    (_, i) => `<option value="${FIRST_WORK_YEAR + i}">${FIRST_WORK_YEAR + i}</option>`,
+                ).join("");
+                select.value = String(getActiveYear());
+                const label = document.getElementById("active-year-label");
+                if (label) label.textContent = `· ${getActiveYear()}`;
+            }
+
+            async function setActiveYear(year) {
+                const nextYear = Number(year);
+                if (!Number.isInteger(nextYear) || nextYear < FIRST_WORK_YEAR)
+                    return;
+                if (nextYear === getActiveYear()) return;
+                activeYear = nextYear;
+                cargaHorasDateApplied = false;
+                initialMonthDefaultsApplied = false;
+                diasDirty = false;
+                renderYearSelect();
+                const loaded = await loadCloud();
+                await loadSueldos(false);
+                if (!loaded) {
+                    showAlert("er", "No se pudo cargar la información del año seleccionado.");
+                    return;
+                }
+                onMC(true);
+                calcR();
+                renderAT();
+                if (curTab === "ch") {
+                    applyCargaHorasCurrentDateOnce();
+                    chGetDiasSemana();
+                    loadMisSolicitudes();
+                }
+                if (curTab === "su") renderSueldos();
+            }
             function resolveRol(email, dbRol) {
                 if (dbRol) return dbRol;
                 if (email && ADMIN_EMAILS.includes(email.toLowerCase()))
@@ -4484,6 +4557,7 @@
             }
             function applyInitialMonthDefaults() {
                 if (initialMonthDefaultsApplied) return;
+                if (getActiveYear() !== new Date().getFullYear()) return;
                 initialMonthDefaultsApplied = true;
                 const mes = getCurrentMonthName();
                 ["smr", "smd"].forEach((id) => {
@@ -4494,6 +4568,7 @@
             }
             function applyCargaHorasCurrentDateOnce() {
                 if (cargaHorasDateApplied) return false;
+                if (getActiveYear() !== new Date().getFullYear()) return false;
                 const chmes = document.getElementById("chmes");
                 const chdia = document.getElementById("chdia");
                 if (!chmes || !chdia) return false;
@@ -4589,12 +4664,13 @@
                     isLegacyMayoImportState(m, state)
                 );
             }
-            async function fetchMesForEmail(email, m) {
+            async function fetchMesForEmail(email, m, year = getActiveYear()) {
                 const owner = dataEmail(email);
                 const { data, error } = await sb
                     .from("bw_meses")
                     .select("*")
                     .eq("email", owner)
+                    .eq("anio", year)
                     .eq("mes", m)
                     .limit(1);
                 if (error) return { state: null, error };
@@ -4608,10 +4684,11 @@
                     error: null,
                 };
             }
-            async function saveMesForEmail(email, m, state) {
+            async function saveMesForEmail(email, m, state, year = getActiveYear()) {
                 const owner = dataEmail(email);
                 const payload = {
                     email: owner,
+                    anio: year,
                     mes: m,
                     hrs_oficina: Number(state.hrsOficina) || 0,
                     hrs_evento: Number(state.hrsEvento) || 0,
@@ -4631,6 +4708,7 @@
                     .from("bw_meses")
                     .select("mes")
                     .eq("email", owner)
+                    .eq("anio", year)
                     .eq("mes", m)
                     .limit(1);
                 if (findError) return false;
@@ -4639,6 +4717,7 @@
                           .from("bw_meses")
                           .update(payload)
                           .eq("email", owner)
+                          .eq("anio", year)
                           .eq("mes", m)
                     : sb.from("bw_meses").insert(payload);
                 const { error } = await q;
@@ -4949,6 +5028,7 @@
                 adminUsers = [];
                 initialMonthDefaultsApplied = false;
                 cargaHorasDateApplied = false;
+                activeYearInitialized = false;
                 if (window._poll) {
                     clearInterval(window._poll);
                     window._poll = null;
@@ -5168,7 +5248,8 @@
                 const { data: mr, error: mrError } = await sb
                     .from("bw_meses")
                     .select("*")
-                    .eq("email", owner);
+                    .eq("email", owner)
+                    .eq("anio", getActiveYear());
                 if (loadSeq !== cloudLoadSeq) return false;
                 if (mrError) {
                     setCloud(false);
@@ -5401,6 +5482,7 @@
                     .from("bw_sueldos")
                     .select("*")
                     .eq("email", owner)
+                    .eq("anio", getActiveYear())
                     .order("fecha_pago", { ascending: false })
                     .order("created_at", { ascending: false });
                 if (error) {
@@ -5627,6 +5709,7 @@
                 const estado = sueldoEstadoValue(final, projectedPaid);
                 const payload = {
                     email: owner,
+                    anio: getActiveYear(),
                     mes,
                     fecha_pago: fecha,
                     monto,
@@ -5677,6 +5760,7 @@
                 const estado = sueldoEstadoValue(final, projectedPaid);
                 const payload = {
                     email: owner,
+                    anio: getActiveYear(),
                     mes,
                     fecha_pago: fecha,
                     monto,
@@ -5778,6 +5862,8 @@
 
             async function initApp() {
                 try {
+                    initializeActiveYearOnce();
+                    renderYearSelect();
                     isAdm = cu.rol === "admin";
                     setAdminElementsVisible(isAdm);
                     if (isAdm) await loadAdminUsers();
@@ -5809,9 +5895,10 @@
                         const { data: mr } = await sb
                             .from("bw_meses")
                             .select(
-                                "mes,email,hrs_oficina,hrs_evento,gastos,adelantos,dias,tarifa_oficina,tarifa_evento",
+                                "mes,anio,email,hrs_oficina,hrs_evento,gastos,adelantos,dias,tarifa_oficina,tarifa_evento",
                             )
-                            .eq("email", currentDataEmail());
+                            .eq("email", currentDataEmail())
+                            .eq("anio", getActiveYear());
                         if (!mr) return;
                         const curMes =
                             curTab === "md"
@@ -5827,6 +5914,7 @@
                             .from("bw_sueldos")
                             .select("*")
                             .eq("email", currentDataEmail())
+                            .eq("anio", getActiveYear())
                             .order("fecha_pago", { ascending: false })
                             .order("created_at", { ascending: false });
                         if (sueldoRows) SUELDOS = sueldoRows;
@@ -6350,11 +6438,11 @@
 
             function generarDiasMes(mesNombre) {
                 const mi = MESES.indexOf(mesNombre);
-                const total = DIAS_POR_MES[mi];
+                const total = new Date(getActiveYear(), mi + 1, 0).getDate();
                 const result = [];
                 for (let d = 1; d <= total; d++) {
-                    const fecha = `${String(d).padStart(2, "0")}/${String(mi + 1).padStart(2, "0")}/2026`;
-                    const jsDate = new Date(2026, mi, d);
+                    const fecha = `${String(d).padStart(2, "0")}/${String(mi + 1).padStart(2, "0")}/${getActiveYear()}`;
+                    const jsDate = new Date(getActiveYear(), mi, d);
                     const diaSem = DIAS_ES[jsDate.getDay()];
                     const esFin =
                         jsDate.getDay() === 0 || jsDate.getDay() === 6;
@@ -6977,7 +7065,7 @@
                     ns = now.toLocaleString("es-AR");
                 const wb = XLSX.utils.book_new();
                 const rr = [
-                    ["📊  REGISTRO ANUAL DE HORAS · 2026"],
+                    [`📊  REGISTRO ANUAL DE HORAS · ${getActiveYear()}`],
                     ["BRADEM WIFI"],
                     [],
                     ["⚙️  TARIFAS"],
@@ -7078,7 +7166,7 @@
 
                 // Agregar Inicio y Fin en la Hoja Mensual
                 const mr2 = [
-                    [`📋  REGISTRO DE HORAS · ${m.toUpperCase()} 2026`],
+                    [`📋  REGISTRO DE HORAS · ${m.toUpperCase()} ${getActiveYear()}`],
                     ["BRADEM WIFI"],
                     [],
                     [
@@ -7187,9 +7275,9 @@
                 );
                 XLSX.writeFile(
                     wb,
-                    `Registro_Horas_2026_${m}_${now.toLocaleDateString("es-AR").replace(/\//g, "-")}.xlsx`,
+                    `Registro_Horas_${getActiveYear()}_${m}_${now.toLocaleDateString("es-AR").replace(/\//g, "-")}.xlsx`,
                 );
-                showAlert("ok", `✓ Descargado: Registro_Horas_2026_${m}.xlsx`);
+                showAlert("ok", `✓ Descargado: Registro_Horas_${getActiveYear()}_${m}.xlsx`);
             }
 
             function showAlert(t, msg) {
@@ -7271,9 +7359,9 @@
                 const dia =
                     parseInt(document.getElementById("chdia")?.value, 10) || 1;
                 const mesIndex = Math.max(MESES.indexOf(mes), 0);
-                const fecha = new Date(2026, mesIndex, dia);
+                const fecha = new Date(getActiveYear(), mesIndex, dia);
                 return {
-                    key: `2026-${String(mesIndex + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`,
+                    key: `${getActiveYear()}-${String(mesIndex + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`,
                     esDomingo: fecha.getDay() === 0,
                 };
             }
@@ -7323,17 +7411,14 @@
             function chGetDiasSemana() {
                 const mes = document.getElementById("chmes")?.value || "Abril";
                 const mi = MESES.indexOf(mes);
-                const DIAS_POR_MES = [
-                    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
-                ];
-                const total = DIAS_POR_MES[mi];
+                const total = new Date(getActiveYear(), mi + 1, 0).getDate();
                 const sel = document.getElementById("chdia");
                 const prev = sel?.value;
                 if (!sel) return;
                 sel.innerHTML = "";
                 for (let d = 1; d <= total; d++) {
-                    const fecha = `${String(d).padStart(2, "0")}/${String(mi + 1).padStart(2, "0")}/2026`;
-                    const jsDate = new Date(2026, mi, d);
+                    const fecha = `${String(d).padStart(2, "0")}/${String(mi + 1).padStart(2, "0")}/${getActiveYear()}`;
+                    const jsDate = new Date(getActiveYear(), mi, d);
                     const diaSem = DIAS_ES[jsDate.getDay()];
                     const fer = FERIADOS[fecha] ? ` 🏛️` : "";
                     const opt = document.createElement("option");
@@ -7394,21 +7479,19 @@
                     document.getElementById("chbono")?.value || "";
                 const bonoId = bonoValue ? Number(bonoValue) : null;
 
-                if (!horas || horas <= 0) {
+                const tieneHoras = horas > 0 || (horaInicio && horaFin);
+                const tieneGastos = gastos > 0 || adelanto > 0;
+                if (!tieneHoras && !tieneGastos && !desc) {
                     showAlertCH(
                         "er",
-                        "⚠️ Ingresá la cantidad de horas (o el horario de inicio y fin).",
+                        "Ingresá horas, una descripción, gastos o un adelanto para enviar la solicitud.",
                     );
-                    return;
-                }
-                if (!desc) {
-                    showAlertCH("er", "⚠️ Ingresá el lugar / descripción.");
                     return;
                 }
 
                 const mi = MESES.indexOf(mes);
-                const fecha = `${String(diaNum).padStart(2, "0")}/${String(mi + 1).padStart(2, "0")}/2026`;
-                const jsDate = new Date(2026, mi, diaNum);
+                const fecha = `${String(diaNum).padStart(2, "0")}/${String(mi + 1).padStart(2, "0")}/${getActiveYear()}`;
+                const jsDate = new Date(getActiveYear(), mi, diaNum);
                 const dia = DIAS_ES[jsDate.getDay()];
 
                 const btn = document.getElementById("chbtn");
@@ -7417,13 +7500,14 @@
 
                 const { error } = await sb.from("bw_solicitudes").insert({
                     empleado_email: cu.email,
+                    anio: getActiveYear(),
                     mes,
                     fecha,
                     dia,
                     tipo,
                     hora_inicio: horaInicio,
                     hora_fin: horaFin,
-                    horas,
+                    horas: tieneHoras ? horas : 0,
                     descripcion: desc,
                     gastos,
                     det_gastos: guardarBonoEnDetalle(detGastos, bonoId),
@@ -7487,6 +7571,7 @@
                 let q = sb
                     .from("bw_solicitudes")
                     .select("*")
+                    .eq("anio", getActiveYear())
                     .order("created_at", { ascending: false });
                 if (!isAdm) q = q.eq("empleado_email", cu.email);
                 const { data, error } = await q;
@@ -7530,6 +7615,7 @@
                   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                     ${isAdm ? `<input type="checkbox" class="sol-chk" data-id="${r.id}" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;"/>` : ""}
                     ${isAdm ? `<span style="font-size:11px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px;">👤 ${r.empleado_email.split("@")[0]}</span>` : ""}
+                    <span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:4px;">Año ${r.anio || String(r.fecha || "").slice(-4)}</span>
                     <span style="font-weight:600;font-size:13px;">${r.mes}</span>
                     <span style="font-family:var(--mono);font-size:12px;color:var(--muted);">${r.fecha} · ${r.dia}</span>
                     <span style="${tipoBg(r.tipo)}padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${r.tipo}</span>
@@ -7652,8 +7738,9 @@
 
             async function aplicarSolicitud(s) {
                 const mes = s.mes;
+                const year = Number(s.anio) || FIRST_WORK_YEAR;
                 const owner = dataEmail(s.empleado_email);
-                const { state, error } = await fetchMesForEmail(owner, mes);
+                const { state, error } = await fetchMesForEmail(owner, mes, year);
                 if (error || !state) {
                     showAlertCH(
                         "er",
@@ -7669,23 +7756,28 @@
                         ? getBonoDomingo()
                         : null;
 
+                const idx = m.dias.findIndex((d) => d.fecha === s.fecha);
+                const anterior = idx >= 0 ? m.dias[idx] : {};
+                const solicitudTieneHoras = Number(s.horas) > 0 || (s.hora_inicio && s.hora_fin);
+                const solicitudTieneGastos = Number(s.gastos) > 0;
+                const solicitudTieneAdelanto = Number(s.adelanto) > 0;
                 const nuevoDia = {
+                    ...anterior,
                     fecha: s.fecha,
                     dia: s.dia,
-                    tipo: s.tipo,
-                    horaInicio: fmtHora24(s.hora_inicio) || "",
-                    horaFin: fmtHora24(s.hora_fin) || "",
-                    horas: Number(s.horas) || 0,
-                    desc: s.descripcion || "",
-                    gastos: Number(s.gastos) || 0,
-                    detGastos: bonoSolicitud.detalle,
-                    adelanto: Number(s.adelanto) || 0,
+                    tipo: solicitudTieneHoras ? s.tipo : anterior.tipo || s.tipo || "",
+                    horaInicio: solicitudTieneHoras ? fmtHora24(s.hora_inicio) || "" : anterior.horaInicio || "",
+                    horaFin: solicitudTieneHoras ? fmtHora24(s.hora_fin) || "" : anterior.horaFin || "",
+                    horas: solicitudTieneHoras ? Number(s.horas) || 0 : anterior.horas || "",
+                    desc: s.descripcion?.trim() || anterior.desc || "",
+                    gastos: solicitudTieneGastos ? Number(s.gastos) : anterior.gastos || 0,
+                    detGastos: bonoSolicitud.detalle || anterior.detGastos || "",
+                    adelanto: solicitudTieneAdelanto ? Number(s.adelanto) : anterior.adelanto || 0,
                     bono: bonoSolicitud.explicito
                         ? bonoSolicitud.bonoId || ""
-                        : bonoDomingo?.id || "",
+                        : bonoDomingo?.id || anterior.bono || "",
                 };
 
-                const idx = m.dias.findIndex((d) => d.fecha === s.fecha);
                 if (idx >= 0) m.dias[idx] = nuevoDia;
                 else {
                     m.dias.push(nuevoDia);
@@ -7708,7 +7800,7 @@
                 m.gastos = gas;
                 m.adelantos = adel;
 
-                const ok = await saveMesForEmail(owner, mes, m);
+                const ok = await saveMesForEmail(owner, mes, m, year);
                 if (!ok) {
                     setCloud(false);
                     showAlertCH(
@@ -7718,12 +7810,13 @@
                     return false;
                 }
 
-                if (owner === currentDataEmail()) {
+                if (year === getActiveYear() && owner === currentDataEmail()) {
                     MD[mes] = m;
                     calcR();
                     renderAT();
                 }
                 if (
+                    year === getActiveYear() &&
                     owner === currentDataEmail() &&
                     curTab === "md" &&
                     document.getElementById("smd")?.value === mes
