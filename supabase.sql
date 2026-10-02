@@ -236,7 +236,8 @@ begin
   on conflict (snapshot_date) do update
     set created_at = excluded.created_at, payload = excluded.payload;
 
-  delete from public.bw_backup_snapshots where snapshot_date < current_date - 89;
+  delete from public.bw_backup_snapshots
+  where snapshot_date < (current_date - interval '2 months')::date;
   delete from public.bw_audit_log where changed_at < now() - interval '2 years';
 end;
 $$;

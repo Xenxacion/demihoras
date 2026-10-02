@@ -4262,7 +4262,7 @@
                         </div>
                         <div class="debody" style="padding:14px 16px">
                             <p style="margin:0 0 8px;color:var(--muted);font-size:12px">
-                                Se guarda una copia diaria en Supabase por 90 dias. Descarga este archivo para conservar una copia fuera de la base.
+                                Se guarda una copia diaria en Supabase durante los últimos 2 meses. Descargá el archivo para conservar una copia fuera de la base.
                             </p>
                             <div id="backup-status" role="status" style="font-size:12px;color:var(--muted)">
                                 Consultando el ultimo respaldo...
@@ -6258,7 +6258,7 @@
                     return;
                 }
                 status.textContent = data?.snapshot_date
-                    ? `Última copia automática: ${data.snapshot_date}. Se conservan las últimas 90 fechas.`
+                    ? `Última copia automática: ${data.snapshot_date}. Se conservan las copias de los últimos 2 meses.`
                     : "Todavía no hay copias automáticas. Habilitá Cron en Supabase y ejecutá de nuevo supabase.sql.";
             }
 

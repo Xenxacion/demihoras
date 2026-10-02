@@ -27,5 +27,6 @@ test("el SQL crea auditoría, copias, políticas y activador diario", () => {
     assert.match(sql, /create trigger bw_solicitudes_audit/i);
     assert.match(sql, /create policy "admin select bw_audit_log"/i);
     assert.match(sql, /cron\.schedule/i);
-    assert.match(sql, /current_date - 89/i);
+    assert.match(sql, /current_date - interval '2 months'/i);
+    assert.match(html, /2 meses/i);
 });
