@@ -73,6 +73,26 @@ create table if not exists bw_sueldos (
   created_at timestamptz default now()
 );
 
+create table if not exists bw_audit_log (
+  id bigint generated always as identity primary key,
+  changed_at timestamptz not null default now(),
+  changed_by text not null default 'desconocido',
+  table_name text not null,
+  operation text not null check (operation in ('INSERT','UPDATE','DELETE')),
+  record_key text,
+  old_data jsonb,
+  new_data jsonb
+);
+
+create index if not exists bw_audit_log_changed_at_idx on bw_audit_log (changed_at desc);
+
+create table if not exists bw_backup_snapshots (
+  id bigint generated always as identity primary key,
+  snapshot_date date not null unique default current_date,
+  created_at timestamptz not null default now(),
+  payload jsonb not null
+);
+
 -- 2) Migraciones idempotentes
 insert into bw_config (key, value) values
   ('tarifa_oficina', 7000),
@@ -148,6 +168,83 @@ where estado is null
    or estado not in ('parcial','completo','falta_pagar');
 alter table bw_sueldos add constraint bw_sueldos_estado_check check (estado in ('parcial','completo','falta_pagar'));
 
+-- Historial de cambios y copias diarias (la copia JSON también se puede descargar desde Configuración).
+create or replace function bw_log_row_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  before_row jsonb;
+  after_row jsonb;
+  row_data jsonb;
+  row_key text;
+begin
+  before_row := case when tg_op = 'INSERT' then null else to_jsonb(old) end;
+  after_row := case when tg_op = 'DELETE' then null else to_jsonb(new) end;
+  row_data := coalesce(after_row, before_row);
+  row_key := coalesce(
+    row_data->>'id',
+    case when row_data ? 'email' and row_data ? 'anio' and row_data ? 'mes'
+      then concat_ws(':', row_data->>'email', row_data->>'anio', row_data->>'mes') end,
+    row_data->>'email', row_data->>'key'
+  );
+  insert into public.bw_audit_log (changed_by, table_name, operation, record_key, old_data, new_data)
+  values (coalesce(auth.email(), session_user), tg_table_name, tg_op, row_key, before_row, after_row);
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists bw_meses_audit on bw_meses;
+create trigger bw_meses_audit after insert or update or delete on bw_meses
+for each row execute function bw_log_row_change();
+drop trigger if exists bw_solicitudes_audit on bw_solicitudes;
+create trigger bw_solicitudes_audit after insert or update or delete on bw_solicitudes
+for each row execute function bw_log_row_change();
+drop trigger if exists bw_sueldos_audit on bw_sueldos;
+create trigger bw_sueldos_audit after insert or update or delete on bw_sueldos
+for each row execute function bw_log_row_change();
+drop trigger if exists bw_roles_audit on bw_roles;
+create trigger bw_roles_audit after insert or update or delete on bw_roles
+for each row execute function bw_log_row_change();
+drop trigger if exists bw_bonos_audit on bw_bonos;
+create trigger bw_bonos_audit after insert or update or delete on bw_bonos
+for each row execute function bw_log_row_change();
+drop trigger if exists bw_config_audit on bw_config;
+create trigger bw_config_audit after insert or update or delete on bw_config
+for each row execute function bw_log_row_change();
+
+create or replace function bw_create_daily_backup()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.bw_backup_snapshots (snapshot_date, payload)
+  values (current_date, jsonb_build_object(
+    'created_at', now(),
+    'bw_roles', coalesce((select jsonb_agg(to_jsonb(t)) from public.bw_roles t), '[]'::jsonb),
+    'bw_bonos', coalesce((select jsonb_agg(to_jsonb(t)) from public.bw_bonos t), '[]'::jsonb),
+    'bw_config', coalesce((select jsonb_agg(to_jsonb(t)) from public.bw_config t), '[]'::jsonb),
+    'bw_meses', coalesce((select jsonb_agg(to_jsonb(t)) from public.bw_meses t), '[]'::jsonb),
+    'bw_solicitudes', coalesce((select jsonb_agg(to_jsonb(t)) from public.bw_solicitudes t), '[]'::jsonb),
+    'bw_sueldos', coalesce((select jsonb_agg(to_jsonb(t)) from public.bw_sueldos t), '[]'::jsonb)
+  ))
+  on conflict (snapshot_date) do update
+    set created_at = excluded.created_at, payload = excluded.payload;
+
+  delete from public.bw_backup_snapshots where snapshot_date < current_date - 89;
+  delete from public.bw_audit_log where changed_at < now() - interval '2 years';
+end;
+$$;
+
+revoke all on function bw_log_row_change() from public, anon, authenticated;
+revoke all on function bw_create_daily_backup() from public, anon, authenticated;
+grant execute on function bw_log_row_change() to authenticated;
+
 -- 3) RLS
 alter table bw_roles enable row level security;
 alter table bw_bonos enable row level security;
@@ -155,6 +252,19 @@ alter table bw_config enable row level security;
 alter table bw_meses enable row level security;
 alter table bw_solicitudes enable row level security;
 alter table bw_sueldos enable row level security;
+alter table bw_audit_log enable row level security;
+alter table bw_backup_snapshots enable row level security;
+
+drop policy if exists "admin select bw_audit_log" on bw_audit_log;
+create policy "admin select bw_audit_log" on bw_audit_log for select to authenticated
+  using (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
+drop policy if exists "admin select bw_backup_snapshots" on bw_backup_snapshots;
+create policy "admin select bw_backup_snapshots" on bw_backup_snapshots for select to authenticated
+  using (exists (select 1 from bw_roles where email = auth.email() and rol = 'admin'));
+revoke insert, update, delete, truncate, references, trigger on bw_audit_log from anon, authenticated;
+revoke insert, update, delete, truncate, references, trigger on bw_backup_snapshots from anon, authenticated;
+grant select on bw_audit_log, bw_backup_snapshots to authenticated;
+grant usage, select on sequence bw_audit_log_id_seq, bw_backup_snapshots_id_seq to postgres;
 
 drop policy if exists "authenticated can select bw_roles" on bw_roles;
 create policy "authenticated can select bw_roles"
@@ -294,3 +404,26 @@ insert into bw_bonos (id, name, descripcion, porc, tipo, valor) values
   (3, 'Bono 3 - Horas Extra', 'Superar 160 hrs en el mes', 20, 'porcentaje', 20),
   (4, 'Bono 4 - Productividad', 'Objetivos del mes cumplidos', 25, 'porcentaje', 25)
 on conflict (id) do nothing;
+
+-- Crea el primer respaldo y programa uno diario a las 07:00 UTC (04:00 Argentina).
+select public.bw_create_daily_backup();
+
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    execute $schedule$
+      select cron.unschedule(jobid)
+      from cron.job
+      where jobname = 'bradem-daily-backup'
+    $schedule$;
+    execute $schedule$
+      select cron.schedule(
+        'bradem-daily-backup',
+        '0 7 * * *',
+        'select public.bw_create_daily_backup();'
+      )
+    $schedule$;
+  else
+    raise notice 'Habilita pg_cron en Supabase Dashboard > Integrations > Cron y vuelve a ejecutar este SQL para programar copias diarias.';
+  end if;
+end $$;

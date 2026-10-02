@@ -13,6 +13,7 @@
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="./calendar.js"></script>
         <style>
             @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap");
             :root {
@@ -4252,6 +4253,33 @@
                             </button>
                         </div>
                     </div>
+                    <div class="decard" style="margin-top:16px">
+                        <div class="dehead">
+                            <h3>Respaldo de datos</h3>
+                            <button class="bsave" id="backup-download" type="button" onclick="downloadDataBackup()">
+                                Descargar respaldo JSON
+                            </button>
+                        </div>
+                        <div class="debody" style="padding:14px 16px">
+                            <p style="margin:0 0 8px;color:var(--muted);font-size:12px">
+                                Se guarda una copia diaria en Supabase por 90 dias. Descarga este archivo para conservar una copia fuera de la base.
+                            </p>
+                            <div id="backup-status" role="status" style="font-size:12px;color:var(--muted)">
+                                Consultando el ultimo respaldo...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="decard" style="margin-top:16px">
+                        <div class="dehead">
+                            <h3>Historial de cambios</h3>
+                            <button class="bsave bsave-sm" type="button" onclick="loadAuditHistory()">
+                                Actualizar
+                            </button>
+                        </div>
+                        <div class="debody" id="audit-history" style="padding:12px 16px">
+                            <div style="color:var(--muted);font-size:12px">Cargando historial...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -6176,6 +6204,82 @@
                     loadSueldos(false);
                     renderSueldos();
                 }
+                if (id === "cfg" && isAdm) {
+                    loadBackupStatus();
+                    loadAuditHistory();
+                }
+            }
+
+            async function fetchAllRows(table) {
+                const rows = [];
+                const pageSize = 500;
+                for (let from = 0; ; from += pageSize) {
+                    const { data, error } = await sb
+                        .from(table)
+                        .select("*")
+                        .range(from, from + pageSize - 1);
+                    if (error) throw error;
+                    rows.push(...(data || []));
+                    if (!data || data.length < pageSize) return rows;
+                }
+            }
+
+            async function downloadDataBackup() {
+                const button = document.getElementById("backup-download");
+                const status = document.getElementById("backup-status");
+                if (!isAdm || !sb) return;
+                button.disabled = true;
+                status.textContent = "Preparando el archivo...";
+                const tables = ["bw_roles", "bw_bonos", "bw_config", "bw_meses", "bw_solicitudes", "bw_sueldos", "bw_audit_log"];
+                try {
+                    const backup = { exported_at: new Date().toISOString(), format: 1, tables: {} };
+                    for (const table of tables) backup.tables[table] = await fetchAllRows(table);
+                    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `bradem_respaldo_${new Date().toISOString().slice(0, 10)}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    status.textContent = `Respaldo descargado (${Object.values(backup.tables).reduce((n, rows) => n + rows.length, 0)} registros).`;
+                } catch (error) {
+                    status.textContent = `No se pudo crear el respaldo: ${error.message || error}`;
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            async function loadBackupStatus() {
+                const status = document.getElementById("backup-status");
+                if (!status || !isAdm || !sb) return;
+                const { data, error } = await sb.from("bw_backup_snapshots").select("snapshot_date").order("snapshot_date", { ascending: false }).limit(1).maybeSingle();
+                if (error) {
+                    status.textContent = "No disponible todavía. Ejecutá la actualización de supabase.sql y habilitá Cron en Supabase.";
+                    return;
+                }
+                status.textContent = data?.snapshot_date
+                    ? `Última copia automática: ${data.snapshot_date}. Se conservan las últimas 90 fechas.`
+                    : "Todavía no hay copias automáticas. Habilitá Cron en Supabase y ejecutá de nuevo supabase.sql.";
+            }
+
+            async function loadAuditHistory() {
+                const container = document.getElementById("audit-history");
+                if (!container || !isAdm || !sb) return;
+                container.innerHTML = '<div style="color:var(--muted);font-size:12px">Cargando historial...</div>';
+                const { data, error } = await sb.from("bw_audit_log").select("id,changed_at,changed_by,table_name,operation,record_key,old_data,new_data").order("changed_at", { ascending: false }).limit(50);
+                if (error) {
+                    container.innerHTML = '<div style="color:var(--muted);font-size:12px">El historial estará disponible al ejecutar la actualización de supabase.sql.</div>';
+                    return;
+                }
+                if (!data?.length) {
+                    container.innerHTML = '<div style="color:var(--muted);font-size:12px">Todavía no hay cambios registrados.</div>';
+                    return;
+                }
+                container.innerHTML = data.map((row) => {
+                    const when = new Date(row.changed_at).toLocaleString("es-AR");
+                    const payload = JSON.stringify({ anterior: row.old_data, nuevo: row.new_data }, null, 2);
+                    return `<details style="padding:9px 0;border-bottom:1px solid var(--border)"><summary style="cursor:pointer;font-size:12px"><b>${escHtml(row.operation)}</b> ${escHtml(row.table_name)} · ${escHtml(row.record_key || "registro")} · ${escHtml(row.changed_by || "usuario desconocido")} · ${escHtml(when)}</summary><pre style="white-space:pre-wrap;overflow:auto;max-height:240px;font-size:11px;color:var(--muted)">${escHtml(payload)}</pre></details>`;
+                }).join("");
             }
 
             const fmt = (n) =>
@@ -6413,24 +6517,16 @@
                 diasDirty = false;
             }
 
-            const FERIADOS = {
-                "01/01/2026": "Año Nuevo",
-                "16/02/2026": "Carnaval",
-                "17/02/2026": "Carnaval",
-                "24/03/2026": "Día Nac. Memoria",
-                "02/04/2026": "Día del Veterano y Caídos en Malvinas",
-                "03/04/2026": "Viernes Santo",
-                "01/05/2026": "Día del Trabajador",
-                "25/05/2026": "Revolución de Mayo",
-                "15/06/2026": "Día de Güemes",
-                "20/06/2026": "Día de la Bandera",
-                "09/07/2026": "Día de la Independencia",
-                "17/08/2026": "Día de San Martín",
-                "12/10/2026": "Diversidad Cultural",
-                "20/11/2026": "Soberanía Nacional",
-                "08/12/2026": "Inmaculada Concepción",
-                "25/12/2026": "Navidad",
-            };
+            const feriadosPorAnio = new Map();
+            function feriadosForYear(year = getActiveYear()) {
+                if (!feriadosPorAnio.has(year)) {
+                    feriadosPorAnio.set(
+                        year,
+                        window.BRADEM_CALENDAR.getArgentinaHolidays(year),
+                    );
+                }
+                return feriadosPorAnio.get(year);
+            }
             const DIAS_ES = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
             const DIAS_POR_MES = [
                 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
@@ -6446,7 +6542,7 @@
                     const diaSem = DIAS_ES[jsDate.getDay()];
                     const esFin =
                         jsDate.getDay() === 0 || jsDate.getDay() === 6;
-                    const feriado = FERIADOS[fecha] || null;
+                    const feriado = feriadosForYear()[fecha] || null;
                     result.push({
                         fecha,
                         dia: diaSem,
@@ -7420,7 +7516,7 @@
                     const fecha = `${String(d).padStart(2, "0")}/${String(mi + 1).padStart(2, "0")}/${getActiveYear()}`;
                     const jsDate = new Date(getActiveYear(), mi, d);
                     const diaSem = DIAS_ES[jsDate.getDay()];
-                    const fer = FERIADOS[fecha] ? ` 🏛️` : "";
+                    const fer = feriadosForYear()[fecha] ? ` 🏛️` : "";
                     const opt = document.createElement("option");
                     opt.value = d;
                     opt.textContent = `${String(d).padStart(2, "0")} — ${diaSem}${fer}`;
