@@ -411,7 +411,7 @@ select public.bw_create_daily_backup();
 
 do $$
 begin
-  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+  if to_regclass('cron.job') is not null then
     execute $schedule$
       select cron.unschedule(jobid)
       from cron.job
@@ -425,6 +425,6 @@ begin
       )
     $schedule$;
   else
-    raise notice 'Habilita pg_cron en Supabase Dashboard > Integrations > Cron y vuelve a ejecutar este SQL para programar copias diarias.';
+    raise notice 'Cron no esta habilitado. Activa pg_cron en Supabase Dashboard > Integrations > Cron y vuelve a ejecutar este SQL para programar copias diarias.';
   end if;
 end $$;
