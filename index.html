@@ -6230,7 +6230,7 @@
                 if (!isAdm || !sb) return;
                 button.disabled = true;
                 status.textContent = "Preparando el archivo...";
-                const tables = ["bw_roles", "bw_bonos", "bw_config", "bw_meses", "bw_solicitudes", "bw_sueldos", "bw_audit_log"];
+                const tables = ["bw_roles", "bw_bonos", "bw_config", "bw_meses", "bw_solicitudes", "bw_sueldos"];
                 try {
                     const backup = { exported_at: new Date().toISOString(), format: 1, tables: {} };
                     for (const table of tables) backup.tables[table] = await fetchAllRows(table);
