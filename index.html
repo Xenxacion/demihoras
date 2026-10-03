@@ -4540,7 +4540,8 @@
             let solicitudesLoadSeq = 0,
                 solicitudesRenderKey = "",
                 solicitudesSearchTimer = null,
-                dashboardRequestSeq = 0;
+                dashboardRequestSeq = 0,
+                solicitudesBatchRunning = false;
             const cargaHorasBonoOverrides = new Map();
             const stableHtmlKeys = new WeakMap();
 
@@ -7831,6 +7832,10 @@
                 const adelanto =
                     parseFloat(document.getElementById("chadelanto").value) ||
                     0;
+                if ([horas, gastos, adelanto].some((value) => !Number.isFinite(value) || value < 0)) {
+                    showAlertCH("er", "Las horas, los gastos y los adelantos deben ser valores iguales o mayores que cero.");
+                    return;
+                }
                 const bonoValue =
                     document.getElementById("chbono")?.value || "";
                 const bonoId = bonoValue ? Number(bonoValue) : null;
@@ -8038,82 +8043,101 @@
             }
 
             async function accionSeleccionadas(accion) {
+                if (solicitudesBatchRunning) return;
                 const ids = getSeleccionadas();
                 if (!ids.length) {
-                    showAlertCH("wn", "⚠️ Seleccioná al menos una solicitud.");
+                    showAlertCH("wn", "Selecciona al menos una solicitud.");
                     return;
                 }
-                for (const id of ids) await accionSolicitud(id, accion, true);
-                const msg =
-                    accion === "aprobar"
-                        ? `✅ ${ids.length} solicitud(es) aprobadas y aplicadas.`
+
+                solicitudesBatchRunning = true;
+                try {
+                    let successful = 0;
+                    for (const id of ids) {
+                        if (await accionSolicitud(id, accion, true)) successful++;
+                    }
+                    const failed = ids.length - successful;
+                    const successLabel = accion === "aprobar"
+                        ? "aprobadas y aplicadas"
                         : accion === "rechazar"
-                          ? `✗ ${ids.length} solicitud(es) rechazadas.`
-                          : `🗑 ${ids.length} solicitud(es) borradas.`;
-                showAlertCH("ok", msg);
-                loadMisSolicitudes();
+                          ? "rechazadas"
+                          : "borradas";
+                    if (failed === 0) {
+                        showAlertCH("ok", `${successful} solicitud(es) ${successLabel}.`);
+                    } else if (successful === 0) {
+                        showAlertCH("er", `No se pudo procesar ninguna solicitud (${failed} con error). Siguen en la lista.`);
+                    } else {
+                        showAlertCH("wn", `${successful} solicitud(es) ${successLabel}; ${failed} no se pudieron procesar y siguen en la lista.`);
+                    }
+                    await loadMisSolicitudes();
+                } finally {
+                    solicitudesBatchRunning = false;
+                }
+            }
+
+            async function deleteSolicitudFromCloud(id) {
+                const { data, error } = await sb
+                    .from("bw_solicitudes")
+                    .delete()
+                    .eq("id", id)
+                    .select("id")
+                    .maybeSingle();
+                if (error) throw error;
+                if (!data) throw new Error("La solicitud no se encontro o no se pudo borrar.");
             }
 
             async function accionSolicitud(id, accion, batch = false) {
-                if (accion === "borrar") {
-                    const row = document.getElementById("sol-row-" + id);
-                    if (row && !batch) {
-                        row.classList.add("sol-row-deleting");
-                        await new Promise((r) => setTimeout(r, 480));
-                        row.remove();
-                    }
-                    await sb.from("bw_solicitudes").delete().eq("id", id);
-                    if (!batch) showAlertCH("ok", "🗑 Solicitud borrada.");
-                    return;
-                }
-                if (accion === "aprobar") {
-                    const { data: sr } = await sb
-                        .from("bw_solicitudes")
-                        .select("*")
-                        .eq("id", id)
-                        .maybeSingle();
-                    if (!sr) {
-                        if (!batch)
-                            showAlertCH("er", "No se pudo cargar la solicitud.");
-                        return false;
-                    }
-                    const aplicada = await aplicarSolicitud(sr);
-                    if (!aplicada) return false;
+                if (solicitudesBatchRunning && !batch) return false;
+                try {
+                    if (accion === "aprobar") {
+                        const { data: solicitud, error: loadError } = await sb
+                            .from("bw_solicitudes")
+                            .select("*")
+                            .eq("id", id)
+                            .maybeSingle();
+                        if (loadError || !solicitud) {
+                            throw loadError || new Error("No se encontro la solicitud.");
+                        }
 
-                    const { error: deleteError } = await sb
-                        .from("bw_solicitudes")
-                        .delete()
-                        .eq("id", id);
-                    if (deleteError) {
-                        if (!batch)
-                            showAlertCH(
-                                "wn",
-                                "La solicitud se aplicó, pero no se pudo eliminar. Podés reintentarlo sin duplicar el día.",
-                            );
-                        return false;
+                        const applied = await aplicarSolicitud(solicitud);
+                        if (!applied) return false;
+                        try {
+                            await deleteSolicitudFromCloud(id);
+                        } catch (error) {
+                            if (!batch) {
+                                showAlertCH("wn", "Se guardaron los datos, pero la solicitud sigue pendiente porque no se pudo cerrar. Podes reintentar sin duplicar el dia.");
+                            }
+                            return false;
+                        }
+                    } else if (accion === "rechazar" || accion === "borrar") {
+                        await deleteSolicitudFromCloud(id);
+                    } else {
+                        throw new Error("Accion de solicitud desconocida.");
                     }
+
                     const row = document.getElementById("sol-row-" + id);
                     if (row && !batch) {
-                        row.classList.add("sol-row-removing");
-                        await new Promise((r) => setTimeout(r, 480));
+                        row.classList.add(accion === "aprobar" ? "sol-row-removing" : "sol-row-deleting");
+                        await new Promise((resolve) => setTimeout(resolve, 480));
                         row.remove();
                     }
-                    if (!batch)
-                        showAlertCH("ok", "✅ Solicitud aprobada y aplicada.");
+                    if (!batch) {
+                        const message = accion === "aprobar"
+                            ? "Solicitud aprobada y aplicada."
+                            : accion === "rechazar"
+                              ? "Solicitud rechazada y eliminada."
+                              : "Solicitud borrada.";
+                        showAlertCH("ok", message);
+                    }
                     return true;
-                } else {
-                    await sb.from("bw_solicitudes").delete().eq("id", id);
-                    const row = document.getElementById("sol-row-" + id);
-                    if (row && !batch) {
-                        row.classList.add("sol-row-deleting");
-                        await new Promise((r) => setTimeout(r, 480));
-                        row.remove();
+                } catch (error) {
+                    console.error("No se pudo procesar la solicitud", id, error);
+                    if (!batch) {
+                        showAlertCH("er", "No se pudo procesar la solicitud. Sigue en la lista para que puedas reintentar.");
                     }
-                    if (!batch)
-                        showAlertCH("ok", "✗ Solicitud rechazada y eliminada.");
+                    return false;
                 }
             }
-
             async function aplicarSolicitud(s) {
                 const mes = s.mes;
                 const year = Number(s.anio) || FIRST_WORK_YEAR;
@@ -8204,20 +8228,6 @@
                     calcD();
                 }
 
-                const { oficina: tO, evento: tE } = getTarifasForMes(mes);
-                const tot = m.hrsOficina * tO + m.hrsEvento * tE;
-                const flashEl = document.getElementById("chabox");
-                if (flashEl) {
-                    flashEl.innerHTML = `<div class="alert aok" style="flex-direction:column;align-items:flex-start;gap:4px;">
-                  <strong>✅ Solicitud aprobada — ${mes}</strong>
-                  <span style="font-size:11px;">Hrs Oficina: ${m.hrsOficina}h · Hrs Evento: ${m.hrsEvento}h · Total: $${tot.toLocaleString("es-AR")}</span>
-                </div>`;
-                    clearTimeout(flashEl._t);
-                    flashEl._t = setTimeout(
-                        () => (flashEl.innerHTML = ""),
-                        6000,
-                    );
-                }
                 setCloud(ok);
                 return true;
             }

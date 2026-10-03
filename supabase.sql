@@ -131,6 +131,31 @@ alter table bw_solicitudes alter column anio set default 2026;
 alter table bw_solicitudes alter column anio set not null;
 create index if not exists bw_solicitudes_anio_idx on bw_solicitudes (anio);
 
+-- Normaliza campos opcionales heredados y valida solicitudes nuevas.
+update bw_solicitudes set gastos = 0 where gastos is null;
+update bw_solicitudes set adelanto = 0 where adelanto is null;
+update bw_solicitudes
+set estado = 'pendiente'
+where estado is null or estado not in ('pendiente', 'aprobada', 'rechazada');
+alter table bw_solicitudes
+  alter column gastos set default 0,
+  alter column gastos set not null,
+  alter column adelanto set default 0,
+  alter column adelanto set not null,
+  alter column estado set default 'pendiente',
+  alter column estado set not null;
+
+alter table bw_solicitudes drop constraint if exists bw_solicitudes_horas_nonnegative;
+alter table bw_solicitudes add constraint bw_solicitudes_horas_nonnegative check (horas >= 0) not valid;
+alter table bw_solicitudes drop constraint if exists bw_solicitudes_gastos_nonnegative;
+alter table bw_solicitudes add constraint bw_solicitudes_gastos_nonnegative check (gastos >= 0) not valid;
+alter table bw_solicitudes drop constraint if exists bw_solicitudes_adelanto_nonnegative;
+alter table bw_solicitudes add constraint bw_solicitudes_adelanto_nonnegative check (adelanto >= 0) not valid;
+alter table bw_solicitudes drop constraint if exists bw_solicitudes_tipo_valid;
+alter table bw_solicitudes add constraint bw_solicitudes_tipo_valid check (tipo in ('Oficina', 'Evento')) not valid;
+alter table bw_solicitudes drop constraint if exists bw_solicitudes_estado_valid;
+alter table bw_solicitudes add constraint bw_solicitudes_estado_valid check (estado in ('pendiente', 'aprobada', 'rechazada')) not valid;
+
 alter table bw_sueldos add column if not exists metodo text default 'transferencia';
 alter table bw_sueldos add column if not exists estado text default 'parcial';
 alter table bw_sueldos add column if not exists nota text default '';
